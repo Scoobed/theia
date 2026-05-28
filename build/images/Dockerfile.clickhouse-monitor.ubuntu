@@ -4,10 +4,10 @@ FROM golang:${GO_VERSION} as clickhouse-monitor-build
 COPY . /theia
 WORKDIR /theia
 
-# Statically links clickhouse-monitor-plugin binary.
-RUN CGO_ENABLED=0 make clickhouse-monitor-plugin
+# Statically links clickhouse-monitor-plugin binary using vendored deps.
+RUN CGO_ENABLED=0 GOFLAGS=-mod=vendor make clickhouse-monitor-plugin
 
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 RUN mkdir -p clickhouse-monitor-coverage
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"

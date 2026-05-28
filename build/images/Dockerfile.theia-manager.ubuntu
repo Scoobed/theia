@@ -4,11 +4,11 @@ FROM golang:${GO_VERSION} as theia-manager-build
 COPY . /theia
 WORKDIR /theia
 
-RUN make theia-manager-bin
+RUN GOFLAGS=-mod=vendor make theia-manager-bin
 RUN mkdir theia-manager-coverage
 
 # Chose this base image so that a shell is available for users to exec into the container
-FROM ubuntu:23.04
+FROM ubuntu:26.04
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
 LABEL description="A docker image to deploy theia manager."

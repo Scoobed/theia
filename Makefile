@@ -77,7 +77,7 @@ DOCKER_ENV := \
 		-v $(DOCKER_CACHE)/gopath:/tmp/gopath \
 		-v $(DOCKER_CACHE)/gocache:/tmp/gocache \
 		-v $(CURDIR):/usr/src/antrea.io/theia \
-		golang:1.21
+		golang:$(GO_VERSION)
 
 .PHONY: docker-test-unit
 docker-test-unit: $(DOCKER_CACHE)

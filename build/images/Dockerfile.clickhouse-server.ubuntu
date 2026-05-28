@@ -4,9 +4,9 @@ FROM golang:${GO_VERSION} as clickhouse-schema-management-build
 COPY . /theia
 WORKDIR /theia
 
-RUN make clickhouse-schema-management-plugin
+RUN GOFLAGS=-mod=vendor make clickhouse-schema-management-plugin
 
-FROM docker.io/clickhouse/clickhouse-server:23.4
+FROM docker.io/clickhouse/clickhouse-server:25.8
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
 LABEL description="A docker image to deploy the ClickHouse server."
