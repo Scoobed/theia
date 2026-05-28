@@ -127,7 +127,7 @@ func testConnection(t *testing.T, db *sql.DB, mock sqlmock.Sqlmock) {
 
 	openSql = func(driverName, dataSourceName string) (*sql.DB, error) {
 		assert.Equal(t, driverName, "clickhouse")
-		assert.Equal(t, dataSourceName, "tcp://localhost:9000?debug=true&username=username&password=password")
+		assert.Equal(t, dataSourceName, "clickhouse://username:password@localhost:9000/default?dial_timeout=5s&debug=true")
 		return db, nil
 	}
 

@@ -764,7 +764,7 @@ func (data *TestData) deleteAntreaNetworkpolicy(policy *v1beta1.NetworkPolicy) e
 // DeleteANP is a convenience function for deleting ANP by name and Namespace.
 func (data *TestData) DeleteANP(ns, name string) error {
 	log.Infof("Deleting Antrea NetworkPolicy '%s/%s'", ns, name)
-	err := data.crdClient.CrdV1alpha1().NetworkPolicies(ns).Delete(context.TODO(), name, metav1.DeleteOptions{})
+	err := data.crdClient.CrdV1beta1().NetworkPolicies(ns).Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to delete Antrea NetworkPolicy %s: %v", name, err)
 	}
@@ -1600,7 +1600,7 @@ func deleteRecommendedPolicies(tb testing.TB, data *TestData) {
 // DeleteACNP is a convenience function for deleting ACNP by name.
 func (data *TestData) DeleteACNP(name string) error {
 	log.Infof("Deleting AntreaClusterNetworkPolicies %s", name)
-	err := data.crdClient.CrdV1alpha1().ClusterNetworkPolicies().Delete(context.TODO(), name, metav1.DeleteOptions{})
+	err := data.crdClient.CrdV1beta1().ClusterNetworkPolicies().Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to delete ClusterNetworkPolicy %s: %v", name, err)
 	}
@@ -1609,7 +1609,7 @@ func (data *TestData) DeleteACNP(name string) error {
 
 // CleanACNPs is a convenience function for deleting all Antrea ClusterNetworkPolicies in the cluster.
 func (data *TestData) CleanACNPs() error {
-	l, err := data.crdClient.CrdV1alpha1().ClusterNetworkPolicies().List(context.TODO(), metav1.ListOptions{})
+	l, err := data.crdClient.CrdV1beta1().ClusterNetworkPolicies().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to list AntreaClusterNetworkPolicies: %v", err)
 	}
@@ -1621,20 +1621,10 @@ func (data *TestData) CleanACNPs() error {
 	return nil
 }
 
-// DeleteV1Alpha2CG is a convenience function for deleting crd/v1alpha2 ClusterGroup by name.
-func (data *TestData) DeleteV1Alpha2CG(name string) error {
+// DeleteCG is a convenience function for deleting a crd/v1beta1 ClusterGroup by name.
+func (data *TestData) DeleteCG(name string) error {
 	log.Infof("Deleting ClusterGroup %s", name)
-	err := data.crdClient.CrdV1alpha2().ClusterGroups().Delete(context.TODO(), name, metav1.DeleteOptions{})
-	if err != nil {
-		return fmt.Errorf("unable to delete ClusterGroup %s: %v", name, err)
-	}
-	return nil
-}
-
-// DeleteV1Alpha3CG is a convenience function for deleting core/v1alpha3 ClusterGroup by name.
-func (data *TestData) DeleteV1Alpha3CG(name string) error {
-	log.Infof("deleting ClusterGroup %s", name)
-	err := data.crdClient.CrdV1alpha3().ClusterGroups().Delete(context.TODO(), name, metav1.DeleteOptions{})
+	err := data.crdClient.CrdV1beta1().ClusterGroups().Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to delete ClusterGroup %s: %v", name, err)
 	}
@@ -1643,21 +1633,12 @@ func (data *TestData) DeleteV1Alpha3CG(name string) error {
 
 // CleanCGs is a convenience function for deleting all ClusterGroups in the cluster.
 func (data *TestData) CleanCGs() error {
-	l, err := data.crdClient.CrdV1alpha2().ClusterGroups().List(context.TODO(), metav1.ListOptions{})
+	l, err := data.crdClient.CrdV1beta1().ClusterGroups().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("unable to list ClusterGroups in v1alpha2: %v", err)
+		return fmt.Errorf("unable to list ClusterGroups: %v", err)
 	}
 	for _, cg := range l.Items {
-		if err := data.DeleteV1Alpha2CG(cg.Name); err != nil {
-			return err
-		}
-	}
-	l2, err := data.crdClient.CrdV1alpha3().ClusterGroups().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("unable to list ClusterGroups in v1alpha3: %v", err)
-	}
-	for _, cg := range l2.Items {
-		if err := data.DeleteV1Alpha3CG(cg.Name); err != nil {
+		if err := data.DeleteCG(cg.Name); err != nil {
 			return err
 		}
 	}

@@ -33,7 +33,7 @@ func CreateFakeClickHouse(t *testing.T, kubeClient kubernetes.Interface, namespa
 	}
 	openSql = func(driverName, dataSourceName string) (*sql.DB, error) {
 		assert.Equal(t, driverName, "clickhouse")
-		assert.Equal(t, dataSourceName, "tcp://localhost:9000?debug=false&username=username&password=password")
+		assert.Equal(t, dataSourceName, "clickhouse://username:password@localhost:9000/default?dial_timeout=5s&max_execution_time=60")
 		return db, nil
 	}
 	clickHousePod := &v1.Pod{

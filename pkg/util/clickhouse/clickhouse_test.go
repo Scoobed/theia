@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ClickHouse/clickhouse-go"
+	chv2 "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes"
@@ -50,7 +50,7 @@ func TestSetupConnection(t *testing.T) {
 				}
 				openSql = func(driverName, dataSourceName string) (*sql.DB, error) {
 					assert.Equal(t, driverName, "clickhouse")
-					assert.Equal(t, dataSourceName, "tcp://localhost:9000?debug=false&username=username&password=password")
+					assert.Equal(t, dataSourceName, "clickhouse://username:password@localhost:9000/default?dial_timeout=5s&max_execution_time=60")
 					return db, nil
 				}
 				mock.ExpectPing()
@@ -82,7 +82,7 @@ func TestSetupConnection(t *testing.T) {
 				}
 				return nil, nil
 			},
-			expectedErrorMsg: fmt.Sprintf("failed to get ClickHouse URL: error when getting the ClickHouse Service address: error when finding the Service %s: services \"%s\" not found", ServiceName, ServiceName),
+			expectedErrorMsg: fmt.Sprintf("failed to get ClickHouse DSN: error when getting the ClickHouse Service address: error when finding the Service %s: services \"%s\" not found", ServiceName, ServiceName),
 		},
 		{
 			name: "Ping failed test",
@@ -97,7 +97,7 @@ func TestSetupConnection(t *testing.T) {
 				openSql = func(driverName, dataSourceName string) (*sql.DB, error) {
 					return db, nil
 				}
-				mock.ExpectPing().WillReturnError(&clickhouse.Exception{Message: "first error"})
+				mock.ExpectPing().WillReturnError(&chv2.Exception{Message: "first error"})
 				mock.ExpectPing().WillReturnError(fmt.Errorf("second error"))
 				return db, mock
 			},

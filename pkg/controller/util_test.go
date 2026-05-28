@@ -18,7 +18,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -250,7 +249,7 @@ func TestGetSparkJobIds(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
-			query := fmt.Sprintf("SELECT DISTINCT id FROM " + tc.tableName + ";")
+			query := "SELECT DISTINCT id FROM " + tc.tableName + ";"
 			if tc.tableName == "mock_name" {
 				mock.ExpectQuery(query).WillReturnError(errors.New("mock_error"))
 			} else {

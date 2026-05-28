@@ -370,7 +370,7 @@ func (c *NPRecommendationController) syncNPRecommendation(key apimachinerytypes.
 		return err
 	}
 
-	klog.V(4).Infof("Syncing NP Recommendation", "npReco", npReco)
+	klog.V(4).InfoS("Syncing NP Recommendation", "npReco", npReco)
 
 	switch npReco.Status.State {
 	case "", crdv1alpha1.NPRecommendationStateNew:

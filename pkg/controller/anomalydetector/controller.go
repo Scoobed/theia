@@ -365,7 +365,7 @@ func (c *AnomalyDetectorController) syncTADetector(key apimachinerytypes.Namespa
 		}
 		return err
 	}
-	klog.V(4).Infof("Syncing Throughput Anomaly Detector", "newTAD", newTAD)
+	klog.V(4).InfoS("Syncing Throughput Anomaly Detector", "newTAD", newTAD)
 
 	switch newTAD.Status.State {
 	case "", crdv1alpha1.ThroughputAnomalyDetectorStateNew:

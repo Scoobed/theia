@@ -12,7 +12,7 @@ GO_VERSION            := $(shell head -n 1 build/images/deps/go-version)
 GIT_HOOKS             := $(shell find hack/git_client_side_hooks -type f -print)
 TRIVY_TARGET_IMAGE ?=
 
-GOLANGCI_LINT_VERSION := v1.54.2
+GOLANGCI_LINT_VERSION := v2.12.2
 GOLANGCI_LINT_BINDIR  := $(CURDIR)/.golangci-bin
 GOLANGCI_LINT_BIN     := $(GOLANGCI_LINT_BINDIR)/$(GOLANGCI_LINT_VERSION)/golangci-lint
 
