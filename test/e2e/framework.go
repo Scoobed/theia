@@ -159,12 +159,14 @@ const (
 		reverseThroughputFromDestinationNode,
 		clusterUUID,
 		egressName,
-		egressIP)
+		egressIP,
+		egressNodeName)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-				?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+				?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+				?)`
 )
 
 var (
@@ -264,6 +266,7 @@ type ClickHouseFullRow struct {
 	ClusterUUID                          string    `json:"clusterUUID"`
 	EgressName                           string    `json:"egressName"`
 	EgressIP                             string    `json:"egressIP"`
+	EgressNodeName                       string    `json:"egressNodeName"`
 	Trusted                              uint8     `json:"trusted"`
 }
 
@@ -1733,15 +1736,14 @@ func SetupClickHouseConnection(clientset kubernetes.Interface, kubeconfig string
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when forwarding port: %v", err)
 	}
-	endpoint := fmt.Sprintf("tcp://%s:%d", listenAddress, listenPort)
-
 	// Connect to ClickHouse and execute query
 	username, password, err := clickhouse.GetSecret(clientset, "flow-visibility")
 	if err != nil {
 		return nil, portForward, err
 	}
-	url := fmt.Sprintf("%s?debug=false&username=%s&password=%s", endpoint, username, password)
-	connect, err = clickhouse.Connect(url)
+	// Use v2 clickhouse:// DSN format
+	dsn := fmt.Sprintf("clickhouse://%s:%s@%s:%d/default?dial_timeout=5s&max_execution_time=60", username, password, listenAddress, listenPort)
+	connect, err = clickhouse.Connect(dsn)
 	if err != nil {
 		return nil, portForward, fmt.Errorf("error when connecting to ClickHouse, %v", err)
 	}
