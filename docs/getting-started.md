@@ -31,7 +31,7 @@ Theia.
 
 ## Prerequisites
 
-Theia requires that Antrea v1.7.0 or later is installed in the Kubernetes
+Theia requires that Antrea v2.6.0 or later is installed in the Kubernetes
 cluster.
 
 ### Configuration
@@ -146,6 +146,57 @@ These will install the latest available versions of Flow Aggregator and Theia.
 You can also install specific versions of Flow Aggregator (>= v1.8.0) and
 Theia (>= v0.2.0) with `--version <TAG>`. Please ensure that you use the same
 released version for the Flow Aggregator chart as for the Antrea chart.
+
+### Upgrading an Existing Deployment
+
+If you have an existing Flow Aggregator deployment and need to enable pod
+labels (required for Theia's policy recommendation and label-based dashboards),
+run:
+
+```bash
+helm upgrade flow-aggregator antrea/flow-aggregator \
+  --reuse-values \
+  --set recordContents.podLabels=true \
+  -n flow-aggregator
+kubectl -n flow-aggregator rollout restart deployment/flow-aggregator
+```
+
+Alternatively, use the helper script included in this repository:
+
+```bash
+./hack/configure-flow-aggregator-pod-labels.sh
+```
+
+### Verifying Pod Labels in ClickHouse
+
+After enabling pod labels, verify that labels are being captured by querying
+ClickHouse directly:
+
+```bash
+CH_POD=$(kubectl -n flow-visibility get pod -l app=clickhouse -o jsonpath='{.items[0].metadata.name}')
+kubectl -n flow-visibility exec "$CH_POD" -c clickhouse -- clickhouse-client --query "\
+SELECT sourcePodName, sourcePodLabels, destinationPodName, destinationPodLabels \
+FROM flows \
+WHERE sourcePodLabels != '' AND sourcePodLabels != '{}' \
+ORDER BY timeInserted DESC LIMIT 5 FORMAT Pretty"
+```
+
+To check label capture coverage across all records:
+
+```bash
+kubectl -n flow-visibility exec "$CH_POD" -c clickhouse -- clickhouse-client --query "\
+SELECT \
+  count() as total_records, \
+  countIf(sourcePodLabels != '' AND sourcePodLabels != '{}') as records_with_src_labels, \
+  countIf(destinationPodLabels != '' AND destinationPodLabels != '{}') as records_with_dst_labels \
+FROM flows FORMAT Pretty"
+```
+
+Or use the verify-only flag on the helper script:
+
+```bash
+./hack/configure-flow-aggregator-pod-labels.sh --verify-only
+```
 
 ## Features
 
