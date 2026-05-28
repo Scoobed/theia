@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -23,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go"
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/golang-migrate/migrate"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
@@ -270,18 +271,20 @@ func getDataVersionBasedOnTables() (string, error) {
 	var version string
 	command := "SHOW TABLES"
 	var containsFlowsLocal, containsFlows bool
+	ctx := context.Background()
 	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
-		rows, err := connect.Query(command)
+		rows, err := connect.QueryContext(ctx, command)
 		if err != nil {
 			return false, nil
 		} else {
+			defer rows.Close()
 			for rows.Next() {
 				if err := rows.Scan(&tableName); err != nil {
 					return false, nil
 				}
 				if tableName == "migrate_version" {
 					var versionFromOldTable string
-					err = connect.QueryRow("SELECT * FROM migrate_version").Scan(&versionFromOldTable)
+					err = connect.QueryRowContext(ctx, "SELECT * FROM migrate_version").Scan(&versionFromOldTable)
 					if err != nil {
 						return false, nil
 					}
@@ -314,16 +317,18 @@ func connectClickHouse() (*sql.DB, error) {
 	connTimeout := 10 * time.Second
 
 	// Connect to ClickHouse in a loop
+	ctx := context.Background()
 	if err := wait.PollImmediate(connRetryInterval, connTimeout, func() (bool, error) {
-		// Open the database and ping it
+		// Open the database and ping it with v2 driver
 		var err error
-		url := fmt.Sprintf("tcp://%s", clickHouseURL)
-		connect, err = openSql("clickhouse", url)
+		// For database/sql with v2 driver, use "clickhouse" as the driver name
+		dsn := fmt.Sprintf("clickhouse://%s", clickHouseURL)
+		connect, err = openSql("clickhouse", dsn)
 		if err != nil {
 			connErr = fmt.Errorf("failed to open ClickHouse: %v", err)
 			return false, nil
 		}
-		if err := connect.Ping(); err != nil {
+		if err := connect.PingContext(ctx); err != nil {
 			if exception, ok := err.(*clickhouse.Exception); ok {
 				connErr = fmt.Errorf("failed to ping ClickHouse: %v", exception.Message)
 			} else {

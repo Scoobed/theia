@@ -1,4 +1,4 @@
-// Copyright 2023 Antrea Authors
+// Copyright 2025 Antrea Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	crdv1alpha1 "antrea.io/theia/pkg/apis/crd/v1alpha1"
+	apiscrdv1alpha1 "antrea.io/theia/pkg/apis/crd/v1alpha1"
 	versioned "antrea.io/theia/pkg/client/clientset/versioned"
 	internalinterfaces "antrea.io/theia/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "antrea.io/theia/pkg/client/listers/crd/v1alpha1"
+	crdv1alpha1 "antrea.io/theia/pkg/client/listers/crd/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -34,7 +34,7 @@ import (
 // ThroughputAnomalyDetectors.
 type ThroughputAnomalyDetectorInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.ThroughputAnomalyDetectorLister
+	Lister() crdv1alpha1.ThroughputAnomalyDetectorLister
 }
 
 type throughputAnomalyDetectorInformer struct {
@@ -60,16 +60,16 @@ func NewFilteredThroughputAnomalyDetectorInformer(client versioned.Interface, na
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CrdV1alpha1().ThroughputAnomalyDetectors(namespace).List(context.TODO(), options)
+				return client.CrdV1alpha1().ThroughputAnomalyDetectors(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CrdV1alpha1().ThroughputAnomalyDetectors(namespace).Watch(context.TODO(), options)
+				return client.CrdV1alpha1().ThroughputAnomalyDetectors(namespace).Watch(context.Background(), options)
 			},
 		},
-		&crdv1alpha1.ThroughputAnomalyDetector{},
+		&apiscrdv1alpha1.ThroughputAnomalyDetector{},
 		resyncPeriod,
 		indexers,
 	)
@@ -80,9 +80,9 @@ func (f *throughputAnomalyDetectorInformer) defaultInformer(client versioned.Int
 }
 
 func (f *throughputAnomalyDetectorInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&crdv1alpha1.ThroughputAnomalyDetector{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiscrdv1alpha1.ThroughputAnomalyDetector{}, f.defaultInformer)
 }
 
-func (f *throughputAnomalyDetectorInformer) Lister() v1alpha1.ThroughputAnomalyDetectorLister {
-	return v1alpha1.NewThroughputAnomalyDetectorLister(f.Informer().GetIndexer())
+func (f *throughputAnomalyDetectorInformer) Lister() crdv1alpha1.ThroughputAnomalyDetectorLister {
+	return crdv1alpha1.NewThroughputAnomalyDetectorLister(f.Informer().GetIndexer())
 }

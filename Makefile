@@ -186,8 +186,6 @@ clickhouse-monitor:
 	@echo "===> Building antrea/theia-clickhouse-monitor Docker image <==="
 	docker build --pull -t antrea/theia-clickhouse-monitor:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.clickhouse-monitor.ubuntu $(DOCKER_BUILD_ARGS) .
 	docker tag antrea/theia-clickhouse-monitor:$(DOCKER_IMG_VERSION) antrea/theia-clickhouse-monitor
-	docker tag antrea/theia-clickhouse-monitor:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/theia-clickhouse-monitor
-	docker tag antrea/theia-clickhouse-monitor:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/theia-clickhouse-monitor:$(DOCKER_IMG_VERSION)
 
 .PHONY: clickhouse-monitor-plugin
 clickhouse-monitor-plugin:
@@ -199,8 +197,6 @@ theia-manager:
 	@echo "===> Building antrea/theia-manager Docker image <==="
 	docker build --pull -t antrea/theia-manager:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.theia-manager.ubuntu $(DOCKER_BUILD_ARGS) .
 	docker tag antrea/theia-manager:$(DOCKER_IMG_VERSION) antrea/theia-manager
-	docker tag antrea/theia-manager:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/theia-manager
-	docker tag antrea/theia-manager:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/theia-manager:$(DOCKER_IMG_VERSION)
 
 .PHONY: theia-manager-bin
 theia-manager-bin:
@@ -212,8 +208,6 @@ clickhouse-server:
 	@echo "===> Building antrea/theia-clickhouse-server Docker image <==="
 	docker build --pull -t antrea/theia-clickhouse-server:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.clickhouse-server.ubuntu $(DOCKER_BUILD_ARGS) .
 	docker tag antrea/theia-clickhouse-server:$(DOCKER_IMG_VERSION) antrea/theia-clickhouse-server
-	docker tag antrea/theia-clickhouse-server:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/theia-clickhouse-server
-	docker tag antrea/theia-clickhouse-server:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/theia-clickhouse-server:$(DOCKER_IMG_VERSION)
 
 .PHONY: clickhouse-server-multi-arch
 clickhouse-server-multi-arch:
@@ -232,8 +226,6 @@ spark-jobs:
 	@echo "===> Building antrea/theia-spark-jobs Docker image <==="
 	docker build --pull -t antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.spark-jobs.ubuntu .
 	docker tag antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION) antrea/theia-spark-jobs
-	docker tag antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/theia-spark-jobs
-	docker tag antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION) projects.registry.vmware.com/antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION)
 
 THEIA_BINARIES := theia-darwin theia-linux theia-windows
 $(THEIA_BINARIES): theia-%:

@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -26,7 +27,7 @@ import (
 
 	"antrea.io/antrea/pkg/signals"
 
-	"github.com/ClickHouse/clickhouse-go"
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
@@ -185,17 +186,25 @@ func connectLoop() (*sql.DB, error) {
 	if len(userName) == 0 || len(password) == 0 || len(databaseURL) == 0 {
 		return nil, fmt.Errorf("unable to load environment variables, CLICKHOUSE_USERNAME, CLICKHOUSE_PASSWORD and DB_URL must be defined")
 	}
+	// Parse databaseURL to extract host and port
+	databaseURL = strings.TrimPrefix(databaseURL, "tcp://")
+	databaseURL = strings.TrimPrefix(databaseURL, "http://")
+	databaseURL = strings.TrimPrefix(databaseURL, "https://")
+
+	// Build DSN for database/sql with ClickHouse v2 driver
+	dsn := fmt.Sprintf("clickhouse://%s:%s@%s/default?dial_timeout=5s&debug=true", userName, password, databaseURL)
+
 	var connect *sql.DB
+	ctx := context.Background()
 	if err := wait.PollImmediate(connRetryInterval, connTimeout, func() (bool, error) {
 		// Open the database and ping it
-		dataSourceName := fmt.Sprintf("%s?debug=true&username=%s&password=%s", databaseURL, userName, password)
 		var err error
-		connect, err = openSql("clickhouse", dataSourceName)
+		connect, err = openSql("clickhouse", dsn)
 		if err != nil {
 			klog.ErrorS(err, "Failed to connect to ClickHouse")
 			return false, nil
 		}
-		if err := connect.Ping(); err != nil {
+		if err := connect.PingContext(ctx); err != nil {
 			if exception, ok := err.(*clickhouse.Exception); ok {
 				klog.ErrorS(nil, "Failed to ping ClickHouse", "message", exception.Message)
 			} else {
@@ -226,8 +235,9 @@ func checkStorageCondition(connect *sql.DB) {
 
 func getDiskUsage(connect *sql.DB, freeSpace *uint64, totalSpace *uint64) {
 	// Get free space from ClickHouse system table
+	ctx := context.Background()
 	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
-		if err := connect.QueryRow("SELECT free_space, total_space FROM system.disks").Scan(freeSpace, totalSpace); err != nil {
+		if err := connect.QueryRowContext(ctx, "SELECT free_space, total_space FROM system.disks").Scan(freeSpace, totalSpace); err != nil {
 			klog.ErrorS(err, "Failed to get the disk usage")
 			return false, nil
 		} else {
@@ -241,8 +251,9 @@ func getDiskUsage(connect *sql.DB, freeSpace *uint64, totalSpace *uint64) {
 
 func getClickHouseUsage(connect *sql.DB, usedSpace *uint64) {
 	// Get space usage from ClickHouse system table
+	ctx := context.Background()
 	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
-		if err := connect.QueryRow("SELECT SUM(bytes) FROM system.parts").Scan(usedSpace); err != nil {
+		if err := connect.QueryRowContext(ctx, "SELECT SUM(bytes) FROM system.parts").Scan(usedSpace); err != nil {
 			klog.ErrorS(err, "Failed to get the used space size by the ClickHouse")
 			return false, nil
 		} else {
@@ -282,12 +293,13 @@ func monitorMemory(connect *sql.DB) {
 			return
 		}
 		// Delete old data in the table storing records and related materialized views
+		ctx := context.Background()
 		tables := append([]string{tableName}, mvNames...)
 		for _, table := range tables {
 			// Delete all records inserted earlier than an upper boundary of timeInserted
 			query := fmt.Sprintf("ALTER TABLE %s DELETE WHERE timeInserted < toDateTime(?)", table)
 			// #nosec G201: table and view names were sanitized earlier
-			if _, err := connect.Exec(query, timeBoundary.Format(timeFormat)); err != nil {
+			if _, err := connect.ExecContext(ctx, query, timeBoundary.Format(timeFormat)); err != nil {
 				klog.ErrorS(err, "Failed to delete records from ClickHouse", "table", table)
 				return
 			}
@@ -305,9 +317,10 @@ func getTimeBoundary(connect *sql.DB) (time.Time, error) {
 		return timeBoundary, err
 	}
 	query := fmt.Sprintf("SELECT timeInserted FROM %s LIMIT 1 OFFSET (?)", tableName)
+	ctx := context.Background()
 	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
 		// #nosec G201: table name was sanitized earlier
-		if err := connect.QueryRow(query, deleteRowNum-1).Scan(&timeBoundary); err != nil {
+		if err := connect.QueryRowContext(ctx, query, deleteRowNum-1).Scan(&timeBoundary); err != nil {
 			klog.ErrorS(err, "Failed to get timeInserted boundary", "table name", tableName)
 			return false, nil
 		} else {
@@ -323,9 +336,10 @@ func getTimeBoundary(connect *sql.DB) (time.Time, error) {
 func getDeleteRowNum(connect *sql.DB) (uint64, error) {
 	var deleteRowNum, count uint64
 	query := fmt.Sprintf("SELECT COUNT() FROM %s", tableName)
+	ctx := context.Background()
 	if err := wait.PollImmediate(queryRetryInterval, queryTimeout, func() (bool, error) {
 		// #nosec G201: table name was sanitized earlier
-		if err := connect.QueryRow(query).Scan(&count); err != nil {
+		if err := connect.QueryRowContext(ctx, query).Scan(&count); err != nil {
 			klog.ErrorS(err, "Failed to get the number of records", "table name", tableName)
 			return false, nil
 		} else {

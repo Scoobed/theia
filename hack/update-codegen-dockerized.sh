@@ -28,12 +28,14 @@ function reset_year_change {
   # The call to 'tac' ensures that we cannot have concurrent git processes, by
   # waiting for the call to 'git diff  --numstat' to complete before iterating
   # over the files and calling 'git diff ${file}'.
-  git diff  --numstat | awk '$1 == "1" && $2 == "1" {print $3}' | tac | while read file; do
-    if [[ "$(git diff ${file})" == *"-// Copyright "*" Antrea Authors"* ]]; then
-      git checkout HEAD -- "${file}"
-      echo "=== ${file} is reset ==="
-    fi
-  done
+  if git diff --numstat > /dev/null 2>&1; then
+    git diff --numstat | awk '$1 == "1" && $2 == "1" {print $3}' | tac | while read file; do
+      if [[ -n "${file}" ]] && git diff "${file}" 2>/dev/null | grep -q "\-// Copyright .*Antrea Authors"; then
+        git checkout HEAD -- "${file}" 2>/dev/null || true
+        echo "=== ${file} is reset ==="
+      fi
+    done
+  fi
 }
 
 # Generate clientset and apis code with K8s codegen tools.
@@ -41,29 +43,35 @@ $GOPATH/bin/client-gen \
   --clientset-name versioned \
   --input-base "${THEIA_PKG}/pkg/apis/" \
   --input "crd/v1alpha1" \
-  --output-package "${THEIA_PKG}/pkg/client/clientset" \
+  --output-dir "pkg/client/clientset" \
+  --output-pkg "${THEIA_PKG}/pkg/client/clientset" \
   --go-header-file hack/boilerplate/license_header.go.txt
 
 # Generate listers with K8s codegen tools.
+# Note: In K8s 1.35+, lister-gen takes packages as positional arguments
 $GOPATH/bin/lister-gen \
-  --input-dirs "${THEIA_PKG}/pkg/apis/crd/v1alpha1" \
-  --output-package "${THEIA_PKG}/pkg/client/listers" \
-  --go-header-file hack/boilerplate/license_header.go.txt
+  --output-dir "pkg/client/listers" \
+  --output-pkg "${THEIA_PKG}/pkg/client/listers" \
+  --go-header-file hack/boilerplate/license_header.go.txt \
+  "${THEIA_PKG}/pkg/apis/crd/v1alpha1"
 
 # Generate informers with K8s codegen tools.
+# Note: In K8s 1.35+, informer-gen takes packages as positional arguments
 $GOPATH/bin/informer-gen \
-  --input-dirs "${THEIA_PKG}/pkg/apis/crd/v1alpha1" \
   --versioned-clientset-package "${THEIA_PKG}/pkg/client/clientset/versioned" \
   --listers-package "${THEIA_PKG}/pkg/client/listers" \
-  --output-package "${THEIA_PKG}/pkg/client/informers" \
-  --go-header-file hack/boilerplate/license_header.go.txt
+  --output-dir "pkg/client/informers" \
+  --output-pkg "${THEIA_PKG}/pkg/client/informers" \
+  --go-header-file hack/boilerplate/license_header.go.txt \
+  "${THEIA_PKG}/pkg/apis/crd/v1alpha1"
 
+# Generate deepcopy code
 $GOPATH/bin/deepcopy-gen \
-  --input-dirs "${THEIA_PKG}/pkg/apis/intelligence/v1alpha1" \
-  --input-dirs "${THEIA_PKG}/pkg/apis/system/v1alpha1" \
-  --input-dirs "${THEIA_PKG}/pkg/apis/crd/v1alpha1" \
-  --input-dirs "${THEIA_PKG}/pkg/apis/stats/v1alpha1" \
-  -O zz_generated.deepcopy \
-  --go-header-file hack/boilerplate/license_header.go.txt
+  --output-file zz_generated.deepcopy.go \
+  --go-header-file hack/boilerplate/license_header.go.txt \
+  "${THEIA_PKG}/pkg/apis/intelligence/v1alpha1" \
+  "${THEIA_PKG}/pkg/apis/system/v1alpha1" \
+  "${THEIA_PKG}/pkg/apis/crd/v1alpha1" \
+  "${THEIA_PKG}/pkg/apis/stats/v1alpha1"
 
 reset_year_change

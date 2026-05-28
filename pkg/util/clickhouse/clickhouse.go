@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go"
+	"github.com/ClickHouse/clickhouse-go/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -51,28 +51,29 @@ var (
 )
 
 func SetupConnection(client kubernetes.Interface) (connect *sql.DB, err error) {
-	url, err := getClickHouseURL(client)
+	dsn, err := getClickHouseDSN(client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ClickHouse URL: %v", err)
+		return nil, fmt.Errorf("failed to get ClickHouse DSN: %v", err)
 	}
-	connect, err = Connect(url)
+	connect, err = Connect(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("error when connecting to ClickHouse, %v", err)
 	}
 	return connect, nil
 }
 
-func Connect(url string) (*sql.DB, error) {
-	var connect *sql.DB
+func Connect(dsn string) (*sql.DB, error) {
 	// Open the database and ping it
+	var connect *sql.DB
 	var err error
-	connect, err = openSql("clickhouse", url)
+	connect, err = openSql("clickhouse", dsn)
 	if err != nil {
-		return connect, fmt.Errorf("failed to open ClickHouse: %v", err)
+		return nil, fmt.Errorf("failed to open ClickHouse: %v", err)
 	}
 	var errMessages []string
+	ctx := context.Background()
 	if err = wait.PollImmediate(pingRetryInterval, pingTimeout, func() (done bool, err error) {
-		if err := connect.Ping(); err != nil {
+		if err := connect.PingContext(ctx); err != nil {
 			if exception, ok := err.(*clickhouse.Exception); ok {
 				errMessages = append(errMessages, fmt.Errorf("error message: %v", exception.Message).Error())
 			} else {
@@ -106,28 +107,36 @@ func GetSecret(client kubernetes.Interface, namespace string) (username string, 
 	return username, password, nil
 }
 
-func getClickHouseURL(client kubernetes.Interface) (url string, err error) {
+func getClickHouseDSN(client kubernetes.Interface) (string, error) {
 	baseURL := os.Getenv(urlKey)
 	username := os.Getenv(usernameKey)
 	password := os.Getenv(passwordKey)
 
+	var err error
 	if baseURL == "" || username == "" || password == "" {
 		if client == nil {
 			client, err = createK8sClient()
 			if err != nil {
-				return url, fmt.Errorf("failed to create k8s client: %v", err)
+				return "", fmt.Errorf("failed to create k8s client: %v", err)
 			}
 		}
 		serviceIP, servicePort, err := k8s.GetServiceAddr(client, ServiceName, env.GetTheiaNamespace(), ServicePortProtocal)
 		if err != nil {
-			return url, fmt.Errorf("error when getting the ClickHouse Service address: %v", err)
+			return "", fmt.Errorf("error when getting the ClickHouse Service address: %v", err)
 		}
-		baseURL = fmt.Sprintf("tcp://%s:%d", serviceIP, servicePort)
+		baseURL = fmt.Sprintf("%s:%d", serviceIP, servicePort)
 		username, password, err = GetSecret(client, env.GetTheiaNamespace())
 		if err != nil {
-			return url, err
+			return "", err
 		}
 	}
-	url = fmt.Sprintf("%s?debug=false&username=%s&password=%s", baseURL, username, password)
-	return url, nil
+	// Parse baseURL to extract host and port
+	baseURL = strings.TrimPrefix(baseURL, "tcp://")
+	baseURL = strings.TrimPrefix(baseURL, "http://")
+	baseURL = strings.TrimPrefix(baseURL, "https://")
+
+	// Build DSN for database/sql with ClickHouse v2 driver
+	// Format: clickhouse://username:password@host:port/database?param1=value1&param2=value2
+	dsn := fmt.Sprintf("clickhouse://%s:%s@%s/default?dial_timeout=5s&max_execution_time=60", username, password, baseURL)
+	return dsn, nil
 }
