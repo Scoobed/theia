@@ -181,6 +181,7 @@ const config = async (env): Promise<Configuration> => {
         async: Boolean(env.development),
         issue: {
           include: [{ file: '**/*.{ts,tsx}' }],
+          exclude: [{ file: '**/*.test.{ts,tsx}' }],
         },
         typescript: { configFile: path.join(process.cwd(), 'tsconfig.json') },
       }),
