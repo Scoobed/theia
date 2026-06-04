@@ -28,6 +28,22 @@ spec:
           volumeMounts:
           - mountPath: /data
             name: grafana-pv
+        - name: init-plugins
+          image: docker.io/busybox
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /plugins/theia-grafana-sankey-plugin
+              cp /bundled-plugins/sankey-module.js /plugins/theia-grafana-sankey-plugin/module.js
+              cp /bundled-plugins/sankey-plugin.json /plugins/theia-grafana-sankey-plugin/plugin.json
+              chown -R 472:472 /plugins
+          volumeMounts:
+          - mountPath: /bundled-plugins
+            name: bundled-plugins
+          - mountPath: /plugins
+            name: grafana-plugins
       containers:
         - name: grafana
           image: {{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}
@@ -104,6 +120,9 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/grafana
               name: grafana-pv
+            - mountPath: /var/lib/grafana/plugins/theia-grafana-sankey-plugin
+              name: grafana-plugins
+              subPath: theia-grafana-sankey-plugin
             - mountPath: /etc/grafana/provisioning/datasources
               name: grafana-datasource-provider
             - mountPath: /etc/grafana/provisioning/dashboards
@@ -114,6 +133,11 @@ spec:
         - name: grafana-pv
           persistentVolumeClaim:
             claimName: grafana-pvc
+        - name: bundled-plugins
+          configMap:
+            name: grafana-bundled-plugins
+        - name: grafana-plugins
+          emptyDir: {}
         - name: grafana-datasource-provider
           configMap:
             name: grafana-datasource-provider

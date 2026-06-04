@@ -1,0 +1,12 @@
+{{- if .Values.grafana.enable }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-bundled-plugins
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: grafana
+binaryData:
+  sankey-module.js: {{ .Files.Get "plugins/theia-grafana-sankey-plugin/module.js" | b64enc }}
+  sankey-plugin.json: {{ .Files.Get "plugins/theia-grafana-sankey-plugin/plugin.json" | b64enc }}
+{{- end }}

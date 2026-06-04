@@ -235,8 +235,9 @@ grafana:
     # -- TCP port number for the Grafana service.
     tcpPort: 3000
   # -- Grafana plugins to install.
+  # -- Grafana plugins to install at startup. Bundled plugins (sankey, chord,
+  # dependency) are mounted from ConfigMaps and do not need to be listed here.
   installPlugins:
-    - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-sankey-plugin-1.0.3.zip;theia-grafana-sankey-plugin
     - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-chord-plugin-1.0.2.zip;theia-grafana-chord-plugin
     - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-dependency-plugin-1.0.2.zip;theia-grafana-dependency-plugin
     - grafana-clickhouse-datasource 2.2.0
