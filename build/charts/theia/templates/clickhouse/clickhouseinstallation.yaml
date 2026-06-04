@@ -51,7 +51,7 @@ spec:
     zookeeper:
       nodes:
       {{- if eq (len .Values.clickhouse.cluster.zookeeperHosts) 0 }}
-      - host: zookeeper.{{ .Release.Namespace }}
+      - host: zookeeper.{{ .Release.Namespace }}.svc.cluster.local
       {{- else }}
       {{- range $host := .Values.clickhouse.cluster.zookeeperHosts }}
       - host: {{ $host }}
