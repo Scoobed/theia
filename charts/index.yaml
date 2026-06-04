@@ -6,10 +6,10 @@ entries:
       artifacthub.io/operator: "false"
       artifacthub.io/prerelease: "false"
     apiVersion: v2
-    appVersion: latest
-    created: "2026-06-03T23:20:09.00748808-05:00"
+    appVersion: 0.9.0
+    created: "2026-06-04T11:53:50.297895534-05:00"
     description: Antrea Network Flow Visibility
-    digest: a8f1def78af8f1a48ae6dfdcea44a1cb89f72cf7e9485c3dd37b8ea9fe2ef831
+    digest: 582cacf53e4fbc42628dedf8d7d3f1bfa1450746eceaf65a705683d0b7b4ad17
     home: https://antrea.io/
     icon: https://raw.githubusercontent.com/antrea-io/antrea/main/docs/assets/logo/antrea_logo.svg
     keywords:
@@ -29,6 +29,6 @@ entries:
     - https://github.com/antrea-io/theia
     type: application
     urls:
-    - https://raw.githubusercontent.com/Scoobed/theia/ghcr-image-migration/charts/theia-0.0.0.tgz
-    version: 0.0.0
-generated: "2026-06-03T23:20:08.999861974-05:00"
+    - https://raw.githubusercontent.com/Scoobed/theia/ghcr-image-migration/charts/theia-0.9.0.tgz
+    version: 0.9.0
+generated: "2026-06-04T11:53:50.29019686-05:00"
