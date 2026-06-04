@@ -65,6 +65,19 @@ $GOPATH/bin/informer-gen \
   --go-header-file hack/boilerplate/license_header.go.txt \
   "${THEIA_PKG}/pkg/apis/crd/v1alpha1"
 
+# Generate OpenAPI definitions
+$GOPATH/bin/openapi-gen \
+  --output-dir "pkg/apiserver/openapi" \
+  --output-pkg "${THEIA_PKG}/pkg/apiserver/openapi" \
+  --output-file zz_generated.openapi.go \
+  --go-header-file hack/boilerplate/license_header.go.txt \
+  "${THEIA_PKG}/pkg/apis/intelligence/v1alpha1" \
+  "${THEIA_PKG}/pkg/apis/stats/v1alpha1" \
+  "${THEIA_PKG}/pkg/apis/system/v1alpha1" \
+  "k8s.io/apimachinery/pkg/apis/meta/v1" \
+  "k8s.io/apimachinery/pkg/runtime" \
+  "k8s.io/apimachinery/pkg/version"
+
 # Generate deepcopy code
 $GOPATH/bin/deepcopy-gen \
   --output-file zz_generated.deepcopy.go \

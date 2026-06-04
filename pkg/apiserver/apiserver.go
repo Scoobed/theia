@@ -55,22 +55,22 @@ const (
 
 var (
 	// Scheme defines methods for serializing and deserializing API objects.
-	scheme = runtime.NewScheme()
+	Scheme = runtime.NewScheme()
 	// Codecs provides methods for retrieving codecs and serializers for specific
 	// versions and content types.
-	Codecs = serializer.NewCodecFactory(scheme)
+	Codecs = serializer.NewCodecFactory(Scheme)
 	// ParameterCodec defines methods for serializing and deserializing url values
 	// to versioned API objects and back.
-	parameterCodec = runtime.NewParameterCodec(scheme)
+	parameterCodec = runtime.NewParameterCodec(Scheme)
 	// #nosec G101: false positive triggered by variable name which includes "token"
 	TokenPath = "/var/run/antrea/apiserver/loopback-client-token"
 )
 
 func init() {
-	intelligenceinstall.Install(scheme)
-	statsinstall.Install(scheme)
-	systeminstall.Install(scheme)
-	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
+	intelligenceinstall.Install(Scheme)
+	statsinstall.Install(Scheme)
+	systeminstall.Install(Scheme)
+	metav1.AddToGroupVersion(Scheme, schema.GroupVersion{Version: "v1"})
 }
 
 // ExtraConfig holds custom apiserver config.
@@ -133,18 +133,18 @@ func installAPIGroup(s *TheiaManagerAPIServer, c Config) error {
 	clickhouseStatusStorage := clickhouseStatus.NewREST(s.ClickHouseStatusQuerier)
 	throughputAnomalyDetectorStorage := throughputanomalydetector.NewREST(s.ThroughputAnomalyDetectorQuerier)
 
-	intelligenceGroup := genericapiserver.NewDefaultAPIGroupInfo(intelligence.GroupName, scheme, parameterCodec, Codecs)
+	intelligenceGroup := genericapiserver.NewDefaultAPIGroupInfo(intelligence.GroupName, Scheme, parameterCodec, Codecs)
 	v1alpha1Storage := map[string]rest.Storage{}
 	v1alpha1Storage["networkpolicyrecommendations"] = npRecommendationStorage
 	v1alpha1Storage["throughputanomalydetectors"] = throughputAnomalyDetectorStorage
 	intelligenceGroup.VersionedResourcesStorageMap["v1alpha1"] = v1alpha1Storage
 
-	statsGroup := genericapiserver.NewDefaultAPIGroupInfo(apistats.GroupName, scheme, parameterCodec, Codecs)
+	statsGroup := genericapiserver.NewDefaultAPIGroupInfo(apistats.GroupName, Scheme, parameterCodec, Codecs)
 	statsStorage := map[string]rest.Storage{}
 	statsStorage["clickhouse"] = clickhouseStatusStorage
 	statsGroup.VersionedResourcesStorageMap["v1alpha1"] = statsStorage
 
-	systemGroup := genericapiserver.NewDefaultAPIGroupInfo(system.GroupName, scheme, parameterCodec, Codecs)
+	systemGroup := genericapiserver.NewDefaultAPIGroupInfo(system.GroupName, Scheme, parameterCodec, Codecs)
 	systemStorage := map[string]rest.Storage{}
 	bundleStorage := supportbundle.NewSupportBundleStorage(c.extraConfig.kubeConfig, c.extraConfig.k8sClient)
 	systemStorage["supportbundles"] = bundleStorage.SupportBundle

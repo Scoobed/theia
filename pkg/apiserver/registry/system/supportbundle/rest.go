@@ -207,6 +207,10 @@ func (r *supportBundleREST) NamespaceScoped() bool {
 	return false
 }
 
+func (r *supportBundleREST) GetSingularName() string {
+	return "supportbundle"
+}
+
 func (r *supportBundleREST) collect(ctx context.Context, dumpers ...func(string) error) (*systemv1alpha1.SupportBundle, error) {
 	basedir, err := afero.TempDir(defaultFS, "", "bundle_tmp_")
 	if err != nil {
