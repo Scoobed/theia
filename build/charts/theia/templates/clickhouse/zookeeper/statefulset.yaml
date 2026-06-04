@@ -132,7 +132,8 @@ spec:
                   fi
                   echo "weight.$i=$WEIGHT" >> /conf/zoo.cfg;
               done &&
-              chown -Rv zookeeper "$ZOO_DATA_DIR" "$ZOO_DATA_LOG_DIR" "$ZOO_LOG_DIR" "$ZOO_CONF_DIR" &&
+              chown -Rv zookeeper "$ZOO_DATA_DIR" "$ZOO_DATA_LOG_DIR" "$ZOO_LOG_DIR" &&
+              chown zookeeper /conf/zoo.cfg /conf/log4j.properties /conf/java.env &&
               zkServer.sh start-foreground
           readinessProbe:
             exec:
