@@ -12,6 +12,13 @@ GO_VERSION            := $(shell head -n 1 build/images/deps/go-version)
 GIT_HOOKS             := $(shell find hack/git_client_side_hooks -type f -print)
 TRIVY_TARGET_IMAGE ?=
 
+# Tag variables for pulling and retagging upstream images (used by pull-* targets)
+CH_OPERATOR_TAG     ?=
+CH_SERVER_TAG       ?=
+GRAFANA_TAG         ?=
+SPARK_OPERATOR_TAG  ?=
+ZOOKEEPER_TAG       ?=
+
 GOLANGCI_LINT_VERSION := v2.12.2
 GOLANGCI_LINT_BINDIR  := $(CURDIR)/.golangci-bin
 GOLANGCI_LINT_BIN     := $(GOLANGCI_LINT_BINDIR)/$(GOLANGCI_LINT_VERSION)/golangci-lint
@@ -226,6 +233,61 @@ spark-jobs:
 	@echo "===> Building antrea/theia-spark-jobs Docker image <==="
 	docker build --pull -t antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.spark-jobs.ubuntu .
 	docker tag antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION) antrea/theia-spark-jobs
+
+.PHONY: docker-images
+docker-images: clickhouse-monitor clickhouse-server theia-manager spark-jobs
+
+# Targets to pull, retag, and push upstream images to ghcr.io/scoobed.
+# Mirrors the docker_update_theia.yml workflow.
+DOCKER_REGISTRY ?= ghcr.io/scoobed
+
+.PHONY: pull-theia-clickhouse-operator
+pull-theia-clickhouse-operator: check-CH_OPERATOR_TAG
+	@echo "===> Pulling and retagging clickhouse-operator as theia-clickhouse-operator <==="
+	docker pull docker.io/altinity/clickhouse-operator:$(CH_OPERATOR_TAG)
+	docker tag docker.io/altinity/clickhouse-operator:$(CH_OPERATOR_TAG) $(DOCKER_REGISTRY)/theia-clickhouse-operator:$(CH_OPERATOR_TAG)
+	docker push $(DOCKER_REGISTRY)/theia-clickhouse-operator:$(CH_OPERATOR_TAG)
+
+.PHONY: pull-theia-metrics-exporter
+pull-theia-metrics-exporter: check-CH_OPERATOR_TAG
+	@echo "===> Pulling and retagging metrics-exporter as theia-metrics-exporter <==="
+	docker pull docker.io/altinity/metrics-exporter:$(CH_OPERATOR_TAG)
+	docker tag docker.io/altinity/metrics-exporter:$(CH_OPERATOR_TAG) $(DOCKER_REGISTRY)/theia-metrics-exporter:$(CH_OPERATOR_TAG)
+	docker push $(DOCKER_REGISTRY)/theia-metrics-exporter:$(CH_OPERATOR_TAG)
+
+.PHONY: pull-theia-clickhouse-server-upstream
+pull-theia-clickhouse-server-upstream: check-CH_SERVER_TAG
+	@echo "===> Pulling and retagging upstream clickhouse-server as theia-clickhouse-server-upstream <==="
+	docker pull docker.io/clickhouse/clickhouse-server:$(CH_SERVER_TAG)
+	docker tag docker.io/clickhouse/clickhouse-server:$(CH_SERVER_TAG) $(DOCKER_REGISTRY)/theia-clickhouse-server-upstream:$(CH_SERVER_TAG)
+	docker push $(DOCKER_REGISTRY)/theia-clickhouse-server-upstream:$(CH_SERVER_TAG)
+
+.PHONY: pull-theia-grafana
+pull-theia-grafana: check-GRAFANA_TAG
+	@echo "===> Pulling and retagging grafana as theia-grafana <==="
+	docker pull docker.io/grafana/grafana:$(GRAFANA_TAG)
+	docker tag docker.io/grafana/grafana:$(GRAFANA_TAG) $(DOCKER_REGISTRY)/theia-grafana:$(GRAFANA_TAG)
+	docker push $(DOCKER_REGISTRY)/theia-grafana:$(GRAFANA_TAG)
+
+.PHONY: pull-theia-zookeeper
+pull-theia-zookeeper: check-ZOOKEEPER_TAG
+	@echo "===> Pulling and retagging zookeeper as theia-zookeeper <==="
+	docker pull docker.io/zookeeper:$(ZOOKEEPER_TAG)
+	docker tag docker.io/zookeeper:$(ZOOKEEPER_TAG) $(DOCKER_REGISTRY)/theia-zookeeper:$(ZOOKEEPER_TAG)
+	docker push $(DOCKER_REGISTRY)/theia-zookeeper:$(ZOOKEEPER_TAG)
+
+# TODO: spark-operator is skipped from pull-upstream-images until a new
+# upstream image location is confirmed. Run pull-theia-spark-operator
+# individually once the correct source registry is known.
+.PHONY: pull-theia-spark-operator
+pull-theia-spark-operator: check-SPARK_OPERATOR_TAG
+	@echo "===> Pulling and retagging spark-operator as theia-spark-operator <==="
+	docker pull ghcr.io/googlecloudplatform/spark-operator:$(SPARK_OPERATOR_TAG)
+	docker tag ghcr.io/googlecloudplatform/spark-operator:$(SPARK_OPERATOR_TAG) $(DOCKER_REGISTRY)/theia-spark-operator:$(SPARK_OPERATOR_TAG)
+	docker push $(DOCKER_REGISTRY)/theia-spark-operator:$(SPARK_OPERATOR_TAG)
+
+.PHONY: pull-upstream-images
+pull-upstream-images: pull-theia-clickhouse-operator pull-theia-metrics-exporter pull-theia-clickhouse-server-upstream pull-theia-grafana pull-theia-zookeeper
 
 THEIA_BINARIES := theia-darwin theia-linux theia-windows
 $(THEIA_BINARIES): theia-%:
