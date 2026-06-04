@@ -68,6 +68,8 @@ spec:
               value: "true"
             - name: GF_AUTH_ANONYMOUS_ENABLED
               value: "false"
+            - name: GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS
+              value: "theia-grafana-sankey-plugin,theia-grafana-chord-plugin,theia-grafana-dependency-plugin"
             - name: GF_SECURITY_ADMIN_USER
               valueFrom:
                 secretKeyRef:
