@@ -160,13 +160,15 @@ const (
 		clusterUUID,
 		egressName,
 		egressIP,
-		egressNodeName)
+		egressNodeName,
+		appProtocolName,
+		httpVals)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 				?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-				?)`
+				?, ?, ?)`
 )
 
 var (
@@ -267,6 +269,8 @@ type ClickHouseFullRow struct {
 	EgressName                           string    `json:"egressName"`
 	EgressIP                             string    `json:"egressIP"`
 	EgressNodeName                       string    `json:"egressNodeName"`
+	AppProtocolName                      string    `json:"appProtocolName"`
+	HttpVals                             string    `json:"httpVals"`
 	Trusted                              uint8     `json:"trusted"`
 }
 
