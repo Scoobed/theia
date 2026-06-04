@@ -237,8 +237,9 @@ grafana:
   # -- Grafana plugins to install.
   # -- Grafana plugins to install at startup. Bundled plugins (sankey, chord,
   # dependency) are mounted from ConfigMaps and do not need to be listed here.
+  # Sankey and Chord plugins are bundled via ConfigMap (no download needed).
+  # Dependency and ClickHouse datasource are installed at startup.
   installPlugins:
-    - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-chord-plugin-1.0.2.zip;theia-grafana-chord-plugin
     - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-dependency-plugin-1.0.2.zip;theia-grafana-dependency-plugin
     - grafana-clickhouse-datasource 2.2.0
   # -- The dashboards to be displayed in Grafana UI. The files must be put under

@@ -38,6 +38,9 @@ spec:
               mkdir -p /plugins/theia-grafana-sankey-plugin
               cp /bundled-plugins/sankey-module.js /plugins/theia-grafana-sankey-plugin/module.js
               cp /bundled-plugins/sankey-plugin.json /plugins/theia-grafana-sankey-plugin/plugin.json
+              mkdir -p /plugins/theia-grafana-chord-plugin
+              cp /bundled-plugins/chord-module.js /plugins/theia-grafana-chord-plugin/module.js
+              cp /bundled-plugins/chord-plugin.json /plugins/theia-grafana-chord-plugin/plugin.json
               chown -R 472:472 /plugins
           volumeMounts:
           - mountPath: /bundled-plugins
@@ -123,6 +126,9 @@ spec:
             - mountPath: /var/lib/grafana/plugins/theia-grafana-sankey-plugin
               name: grafana-plugins
               subPath: theia-grafana-sankey-plugin
+            - mountPath: /var/lib/grafana/plugins/theia-grafana-chord-plugin
+              name: grafana-plugins
+              subPath: theia-grafana-chord-plugin
             - mountPath: /etc/grafana/provisioning/datasources
               name: grafana-datasource-provider
             - mountPath: /etc/grafana/provisioning/dashboards

@@ -9,4 +9,6 @@ metadata:
 binaryData:
   sankey-module.js: {{ .Files.Get "plugins/theia-grafana-sankey-plugin/module.js" | b64enc }}
   sankey-plugin.json: {{ .Files.Get "plugins/theia-grafana-sankey-plugin/plugin.json" | b64enc }}
+  chord-module.js: {{ .Files.Get "plugins/theia-grafana-chord-plugin/module.js" | b64enc }}
+  chord-plugin.json: {{ .Files.Get "plugins/theia-grafana-chord-plugin/plugin.json" | b64enc }}
 {{- end }}
