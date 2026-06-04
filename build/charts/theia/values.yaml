@@ -141,7 +141,7 @@ clickhouse:
       image:
         repository: "ghcr.io/scoobed/theia-zookeeper"
         pullPolicy: "IfNotPresent"
-        tag: "3.8.4"
+        tag: "3.9.5"
       # -- Set securityContext.
       # Use a specific uid, gid for zookeeper.
       securityContext:
