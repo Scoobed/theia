@@ -22,7 +22,7 @@ spec:
       {{- end }}
       initContainers:
         - name: init-pv
-          image: projects.registry.vmware.com/antrea/busybox
+          image: docker.io/busybox
           imagePullPolicy: IfNotPresent
           command: ["chown", "-R", "472:472", "/data"]
           volumeMounts:
@@ -33,8 +33,6 @@ spec:
           image: {{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}
           imagePullPolicy: {{ .Values.grafana.image.pullPolicy }}
           env:
-            - name: GF_INSTALL_PLUGINS
-              value: {{ join "," .Values.grafana.installPlugins }}
             - name: CLICKHOUSE_USERNAME
               valueFrom:
                 secretKeyRef: 

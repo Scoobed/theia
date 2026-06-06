@@ -1,14 +1,10 @@
-import { UnthemedChordPanel } from './ChordPanel';
-import { configure } from 'enzyme';
-import Adapter from 'enzyme-adapter-react-16';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
-import { LoadingState, PanelProps, TimeRange, createTheme, toDataFrame, PanelData } from '@grafana/data'
+import '@testing-library/jest-dom';
+import { UnthemedChordPanel } from './ChordPanel';
+import { LoadingState, PanelProps, TimeRange, createTheme, toDataFrame, PanelData } from '@grafana/data';
 import { Themeable2 } from '@grafana/ui';
 import { ChordOptions } from 'types';
-
-configure({ adapter: new Adapter() });
 
 describe('Chord Panel Test', () => {
     interface Props extends Themeable2, PanelProps<ChordOptions> {}

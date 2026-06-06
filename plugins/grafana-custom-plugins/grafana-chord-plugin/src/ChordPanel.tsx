@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { DataFrame, PanelProps } from '@grafana/data';
+import { PanelProps } from '@grafana/data';
 import { withTheme2, Themeable2 } from '@grafana/ui';
 import { ChordOptions } from 'types';
 import * as d3 from 'my-d3';
@@ -8,23 +8,16 @@ interface Props extends Themeable2, PanelProps<ChordOptions> {}
 
 export const UnthemedChordPanel: React.FC<Props> = ({ options, data, width, height, theme }) => {
   const d3Container = useRef(null);
-  // GetFieldVal reads field's value from data series
-  function GetFieldVal(fieldName: string) {
-    return data.series
-      .map((series: DataFrame) => series.fields.find((field: any) => field.name.toLowerCase() === fieldName.toLowerCase()))
-      .map((field: any) => {
-        let record = field?.values as any;
-        // The variable 'record' has different types when used with Jest and Webpack.
-        // In the Webpack environment, it is a 'vectorArray,' and 'record?.buffer' is an array.
-        // In the Jest environment, 'record' is already an array, and 'record?.buffer' will be 'undefined',
-        // which can break the test. The following 'if' condition is added to ensure
-        // successful unit test execution with Jest.
-        if(Array.isArray(record)) {
-          return record
-        } else {
-          return record?.buffer;
-        }
-      })[0];
+  // GetFieldVal reads field's value from data series.
+  // In Grafana 10+, field.values is already a plain array.
+  function GetFieldVal(fieldName: string): any[] | undefined {
+    for (const series of data.series) {
+      const field = series.fields.find((f) => f.name.toLowerCase() === fieldName.toLowerCase());
+      if (field) {
+        return Array.from(field.values);
+      }
+    }
+    return undefined;
   }
 
   useEffect(() => {
@@ -48,18 +41,18 @@ export const UnthemedChordPanel: React.FC<Props> = ({ options, data, width, heig
       let records = [];
       let sourcePods = GetFieldVal('srcPod');
       if (sourcePods !== undefined) {
-        let sourcePorts = GetFieldVal('srcPort');
-        let destinationSvcs = GetFieldVal('dstSvc');
-        let destinationSvcPorts = GetFieldVal('dstSvcPort');
-        let destinationPods = GetFieldVal('dstPod');
-        let destinationPorts = GetFieldVal('dstPort');
-        let destinationIPs = GetFieldVal('dstIP');
-        let bytes = GetFieldVal('bytes');
-        let reverseBytes = GetFieldVal('revBytes');
-        let egressNPs = GetFieldVal('egressNetworkPolicyName');
-        let egressRuleActions = GetFieldVal('egressNetworkPolicyRuleAction');
-        let ingressNPs = GetFieldVal('ingressNetworkPolicyName');
-        let ingressRuleActions = GetFieldVal('ingressNetworkPolicyRuleAction');
+        let sourcePorts = GetFieldVal('srcPort') ?? [];
+        let destinationSvcs = GetFieldVal('dstSvc') ?? [];
+        let destinationSvcPorts = GetFieldVal('dstSvcPort') ?? [];
+        let destinationPods = GetFieldVal('dstPod') ?? [];
+        let destinationPorts = GetFieldVal('dstPort') ?? [];
+        let destinationIPs = GetFieldVal('dstIP') ?? [];
+        let bytes = GetFieldVal('bytes') ?? [];
+        let reverseBytes = GetFieldVal('revBytes') ?? [];
+        let egressNPs = GetFieldVal('egressNetworkPolicyName') ?? [];
+        let egressRuleActions = GetFieldVal('egressNetworkPolicyRuleAction') ?? [];
+        let ingressNPs = GetFieldVal('ingressNetworkPolicyName') ?? [];
+        let ingressRuleActions = GetFieldVal('ingressNetworkPolicyRuleAction') ?? [];
         let n = sourcePods.length;
         for (let i = 0; i < n; i++) {
           let record = [];

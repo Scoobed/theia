@@ -115,6 +115,10 @@ func (r *REST) NamespaceScoped() bool {
 	return false
 }
 
+func (r *REST) GetSingularName() string {
+	return "networkpolicyrecommendation"
+}
+
 func (r *REST) ConvertToTable(ctx context.Context, obj runtime.Object, tableOptions runtime.Object) (*metav1.Table, error) {
 	return rest.NewDefaultTableConvertor(intelligence.Resource("networkpolicyrecommendations")).ConvertToTable(ctx, obj, tableOptions)
 }

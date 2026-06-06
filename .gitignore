@@ -24,3 +24,5 @@ plugins/grafana-custom-plugins/grafana-chord-plugin/dist/
 plugins/grafana-custom-plugins/grafana-chord-plugin/coverage/
 
 .golangci-bin
+plugins/grafana-custom-plugins/*/node_modules/
+plugins/grafana-custom-plugins/*/dist/

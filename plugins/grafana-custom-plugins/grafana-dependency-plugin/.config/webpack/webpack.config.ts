@@ -51,6 +51,7 @@ const config = async (env): Promise<Configuration> => {
       'rxjs',
       'react-router',
       'react-router-dom',
+      'd3',
       'angular',
       '@grafana/ui',
       '@grafana/runtime',
@@ -89,11 +90,6 @@ const config = async (env): Promise<Configuration> => {
                   tsx: true,
                   decorators: false,
                   dynamicImport: true,
-                },
-                transform: {
-                  react: {
-                    runtime: 'classic',
-                  },
                 },
               },
             },

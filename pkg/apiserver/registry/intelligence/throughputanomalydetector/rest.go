@@ -209,6 +209,10 @@ func (r *REST) NamespaceScoped() bool {
 	return false
 }
 
+func (r *REST) GetSingularName() string {
+	return "throughputanomalydetector"
+}
+
 func (r *REST) ConvertToTable(ctx context.Context, obj runtime.Object, tableOptions runtime.Object) (*metav1.Table, error) {
 	return rest.NewDefaultTableConvertor(v1alpha1.Resource("throughputanomalydetectors")).ConvertToTable(ctx, obj, tableOptions)
 }

@@ -1,7 +1,7 @@
 clickhouse:
   # -- Container image used by ClickHouse.
   image: 
-    repository: "antrea/theia-clickhouse-server"
+    repository: "ghcr.io/scoobed/theia-clickhouse-server"
     pullPolicy: "IfNotPresent"
     tag: ""
   logger:
@@ -30,7 +30,7 @@ clickhouse:
     skipRoundsNum: 3
     # -- Container image used by the ClickHouse Monitor.
     image:
-      repository: "antrea/theia-clickhouse-monitor"
+      repository: "ghcr.io/scoobed/theia-clickhouse-monitor"
       pullPolicy: "IfNotPresent"
       tag: ""
   # -- Credentials to connect to ClickHouse. They will be stored in a secret.
@@ -115,9 +115,8 @@ clickhouse:
     # storageClassName: "<my-storage-class>".
     # Memory storage is used if both createPersistentVolume.type and
     # persistentVolumeClaimSpec are empty.
-    persistentVolumeClaimSpec: {}
-      # storageClassName: ""
-      # volumeName: ""
+    persistentVolumeClaimSpec:
+      storageClassName: "standard"
   cluster:
     # -- Number of ClickHouse shards in the cluster.
     shards: 1
@@ -139,9 +138,9 @@ clickhouse:
       replicas: 1
       # -- Container image used by the ZooKeeper.
       image:
-        repository: "antrea/theia-zookeeper"
+        repository: "ghcr.io/scoobed/theia-zookeeper"
         pullPolicy: "IfNotPresent"
-        tag: "3.8.0"
+        tag: "3.9.5"
       # -- Set securityContext.
       # Use a specific uid, gid for zookeeper.
       securityContext:
@@ -177,9 +176,8 @@ clickhouse:
         # storageClassName: "<my-storage-class>".
         # Memory storage is used if both createPersistentVolume.type and
         # persistentVolumeClaimSpec are empty.
-        persistentVolumeClaimSpec: {}
-        # storageClassName: ""
-        # volumeName: ""
+        persistentVolumeClaimSpec:
+          storageClassName: "standard"
     # -- Affinity for the ClickHouse Pods. By default, it allows only one ClickHouse
     # instance per Node. Please refer to
     # <https://github.com/Altinity/clickhouse-operator/blob/master/docs/chi-examples/99-clickhouseinstallation-max.yaml>
@@ -223,9 +221,9 @@ grafana:
       - 0 
   # -- Container image used by Grafana.
   image: 
-    repository: "antrea/theia-grafana"
+    repository: "ghcr.io/scoobed/theia-grafana"
     pullPolicy: "IfNotPresent"
-    tag: "9.1.6"
+    tag: "v0.9.0"
   # -- Credentials to login to Grafana. They will be stored in a Secret.
   loginSecret:
     username: "admin"
@@ -236,12 +234,9 @@ grafana:
     type: NodePort
     # -- TCP port number for the Grafana service.
     tcpPort: 3000
-  # -- Grafana plugins to install.
-  installPlugins:
-    - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-sankey-plugin-1.0.3.zip;theia-grafana-sankey-plugin
-    - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-chord-plugin-1.0.2.zip;theia-grafana-chord-plugin
-    - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-dependency-plugin-1.0.2.zip;theia-grafana-dependency-plugin
-    - grafana-clickhouse-datasource 2.2.0
+  # All plugins (sankey, chord, dependency, clickhouse-datasource) are
+  # pre-installed in the custom theia-grafana Docker image. No runtime
+  # downloads are needed.
   # -- The dashboards to be displayed in Grafana UI. The files must be put under
   # provisioning/dashboards.
   dashboards:
@@ -300,7 +295,7 @@ sparkOperator:
   name: "theia"
   # -- Container image used by Spark Operator.
   image: 
-    repository: "antrea/theia-spark-operator"
+    repository: "ghcr.io/scoobed/theia-spark-operator"
     pullPolicy: "IfNotPresent"
     tag: "v1beta2-1.3.3-3.1.1"
 theiaManager:
@@ -308,7 +303,7 @@ theiaManager:
   enable: true
   # -- Container image used by Theia Manager.
   image:
-    repository: "antrea/theia-manager"
+    repository: "ghcr.io/scoobed/theia-manager"
     pullPolicy: "IfNotPresent"
     tag: ""
   # apiServer contains APIServer related configuration options.

@@ -25,14 +25,17 @@ import (
 	"antrea.io/antrea/pkg/log"
 	"antrea.io/antrea/pkg/signals"
 	"antrea.io/antrea/pkg/util/cipher"
+	apiopenapi "k8s.io/apiserver/pkg/endpoints/openapi"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
+	"k8s.io/apiserver/pkg/util/compatibility"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
 	"antrea.io/theia/pkg/apiserver"
 	"antrea.io/theia/pkg/apiserver/certificate"
+	"antrea.io/theia/pkg/apiserver/openapi"
 	"antrea.io/theia/pkg/apiserver/utils/stats"
 	crdclientset "antrea.io/theia/pkg/client/clientset/versioned"
 	crdinformers "antrea.io/theia/pkg/client/informers/externalversions"
@@ -72,6 +75,14 @@ func createAPIServerConfig(
 	authentication.WithRequestTimeout(apiserver.AuthenticationTimeout)
 
 	serverConfig := genericapiserver.NewConfig(apiserver.Codecs)
+	serverConfig.EffectiveVersion = compatibility.DefaultBuildEffectiveVersion()
+	namer := apiopenapi.NewDefinitionNamer(apiserver.Scheme)
+	serverConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(
+		openapi.GetOpenAPIDefinitions, namer)
+	serverConfig.OpenAPIV3Config.Info.Title = "Theia Manager"
+	serverConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(
+		openapi.GetOpenAPIDefinitions, namer)
+	serverConfig.OpenAPIConfig.Info.Title = "Theia Manager"
 	if err := secureServing.ApplyTo(&serverConfig.SecureServing, &serverConfig.LoopbackClientConfig); err != nil {
 		return nil, err
 	}

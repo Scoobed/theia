@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
 import { DependencyOptions } from 'types';
 import { PanelProps } from '@grafana/data';
@@ -6,33 +6,32 @@ import { useTheme2 } from '@grafana/ui';
 
 interface Props extends PanelProps<DependencyOptions> {}
 
-class Mermaid extends React.Component<any> {
-  componentDidMount() {
-    mermaid.contentLoaded();
-  }
-  render() {
-    return <div className="mermaid">{this.props.chart}</div>
-  }
+/** Helper to get field values as a plain array (Grafana 10+ compatible) */
+function getFieldValues(frame: any, fieldName: string): any[] {
+  const field = frame.fields.find((f: any) => f.name === fieldName);
+  return field ? Array.from(field.values) : [];
 }
 
 export const DependencyPanel: React.FC<Props> = ({ options, data, width, height }) => {
   const theme = useTheme2();
+  const containerRef = useRef<HTMLDivElement>(null);
   const frame = data.series[0];
-  const sourcePodNames = frame.fields.find((field) => field.name === 'sourcePodName');
-  const sourcePodLabels = frame.fields.find((field) => field.name === 'sourcePodLabels');
-  const sourceNodeNames = frame.fields.find((field) => field.name === 'sourceNodeName');
-  const destinationPodNames = frame.fields.find((field) => field.name === 'destinationPodName');
-  const destinationPodLabels = frame.fields.find((field) => field.name === 'destinationPodLabels');
-  const destinationNodeNames = frame.fields.find((field) => field.name === 'destinationNodeName');
-  const destinationServicePortNames = frame.fields.find((field) => field.name === 'destinationServicePortName');
-  const octetDeltaCounts = frame.fields.find((field) => field.name === 'octetDeltaCount');
-  
-  let nodeToPodMap = new Map<string, String[]>();
-  let srcToDestMap = new Map<string, Map<string, number>>();
+
+  const sourcePodNamesArr = frame ? getFieldValues(frame, 'sourcePodName') : [];
+  const sourcePodLabelsArr = frame ? getFieldValues(frame, 'sourcePodLabels') : [];
+  const sourceNodeNamesArr = frame ? getFieldValues(frame, 'sourceNodeName') : [];
+  const destinationPodNamesArr = frame ? getFieldValues(frame, 'destinationPodName') : [];
+  const destinationPodLabelsArr = frame ? getFieldValues(frame, 'destinationPodLabels') : [];
+  const destinationNodeNamesArr = frame ? getFieldValues(frame, 'destinationNodeName') : [];
+  const destinationServicePortNamesArr = frame ? getFieldValues(frame, 'destinationServicePortName') : [];
+  const octetDeltaCountsArr = frame ? getFieldValues(frame, 'octetDeltaCount') : [];
+
+  const nodeToPodMap = new Map<string, string[]>();
+  const srcToDestMap = new Map<string, Map<string, number>>();
 
   let graphString = 'graph LR;\n';
   let boxColor;
-  switch(options.color) {
+  switch (options.color) {
     case 'red':
       boxColor = theme.colors.error.main;
       break;
@@ -47,42 +46,35 @@ export const DependencyPanel: React.FC<Props> = ({ options, data, width, height 
       break;
   }
 
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    themeVariables: {
-      primaryColor: boxColor,
-      secondaryColor: theme.colors.background.canvas,
-      tertiaryColor: theme.colors.background.canvas,
-      primaryTextColor: theme.colors.text.maxContrast,
-      lineColor: theme.colors.text.maxContrast,
-    },
-  });
-
-  for (let i = 0; i < frame.length; i++) {
-    const sourcePodName = sourcePodNames?.values.get(i);
-    const sourcePodLabel = sourcePodLabels?.values.get(i);
-    const sourceNodeName = sourceNodeNames?.values.get(i);
-    const destinationPodName = destinationPodNames?.values.get(i);
-    const destinationPodLabel = destinationPodLabels?.values.get(i);
-    const destinationNodeName = destinationNodeNames?.values.get(i);
-    const destinationServicePortName = destinationServicePortNames?.values.get(i);
-    const octetDeltaCount = octetDeltaCounts?.values.get(i);
+  const frameLength = frame ? frame.length : 0;
+  for (let i = 0; i < frameLength; i++) {
+    const sourcePodName = sourcePodNamesArr[i];
+    const sourcePodLabel = sourcePodLabelsArr[i];
+    const sourceNodeName = sourceNodeNamesArr[i];
+    const destinationPodName = destinationPodNamesArr[i];
+    const destinationPodLabel = destinationPodLabelsArr[i];
+    const destinationNodeName = destinationNodeNamesArr[i];
+    const destinationServicePortName = destinationServicePortNamesArr[i];
+    const octetDeltaCount = octetDeltaCountsArr[i];
 
     function getName(groupByLabel: boolean, source: boolean, labelJSON: string) {
-      if(!groupByLabel || labelJSON === undefined || options.labelName === undefined) {
+      if (!groupByLabel || labelJSON === undefined || options.labelName === undefined) {
         return source ? sourcePodName : destinationPodName;
       }
-      let labels = JSON.parse(labelJSON);
-      if(labels[options.labelName] !== undefined) {
-        return labels[options.labelName];
+      try {
+        const labels = JSON.parse(labelJSON);
+        if (labels[options.labelName] !== undefined) {
+          return labels[options.labelName];
+        }
+      } catch {
+        // ignore parse errors
       }
       return sourcePodName;
     }
 
-    let groupByPodLabel = options.groupByPodLabel;
-    let srcName = getName(groupByPodLabel, true, sourcePodLabel);
-    let dstName = getName(groupByPodLabel, false, destinationPodLabel);
+    const groupByPodLabel = options.groupByPodLabel;
+    const srcName = getName(groupByPodLabel, true, sourcePodLabel);
+    const dstName = getName(groupByPodLabel, false, destinationPodLabel);
 
     // determine which nodes contain which pods
     if (nodeToPodMap.has(sourceNodeName) && !nodeToPodMap.get(sourceNodeName)?.includes(srcName)) {
@@ -97,24 +89,24 @@ export const DependencyPanel: React.FC<Props> = ({ options, data, width, height 
     }
 
     // determine how much traffic is being sent
-    let pod_src = sourceNodeName+'_pod_'+srcName;
-    let pod_dst = destinationNodeName+'_pod_'+dstName;
-    let svc_dst = 'svc_'+destinationServicePortName;
-    let dests = new Map<string, number>();
+    const pod_src = sourceNodeName + '_pod_' + srcName;
+    const pod_dst = destinationNodeName + '_pod_' + dstName;
+    const svc_dst = 'svc_' + destinationServicePortName;
+    const dests = new Map<string, number>();
     dests.set(pod_dst, octetDeltaCount);
     if (destinationServicePortName !== '') {
       dests.set(svc_dst, octetDeltaCount);
     }
     if (srcToDestMap.has(pod_src)) {
       if (srcToDestMap.get(pod_src)?.has(pod_dst)) {
-        srcToDestMap.get(pod_src)?.set(pod_dst, octetDeltaCount+srcToDestMap.get(pod_src)?.get(pod_dst));
+        srcToDestMap.get(pod_src)?.set(pod_dst, octetDeltaCount + (srcToDestMap.get(pod_src)?.get(pod_dst) ?? 0));
       } else {
         srcToDestMap.get(pod_src)?.set(pod_dst, octetDeltaCount);
       }
       if (destinationServicePortName === '') {
         continue;
       } else if (srcToDestMap.get(pod_src)?.has(svc_dst)) {
-        srcToDestMap.get(pod_src)?.set(svc_dst, octetDeltaCount+srcToDestMap.get(pod_src)?.get(svc_dst));
+        srcToDestMap.get(pod_src)?.set(svc_dst, octetDeltaCount + (srcToDestMap.get(pod_src)?.get(svc_dst) ?? 0));
       } else {
         srcToDestMap.get(pod_src)?.set(svc_dst, octetDeltaCount);
       }
@@ -132,39 +124,51 @@ export const DependencyPanel: React.FC<Props> = ({ options, data, width, height 
     str += 'end;\n';
     graphString += str;
   });
+
   // format arrows to services and pods within graph string
-  let prefixes = ['', 'K', 'M', 'G', 'T'];
+  const prefixes = ['', 'K', 'M', 'G', 'T'];
   srcToDestMap.forEach((destsToBytes, src) => {
     destsToBytes.forEach((bytes, dest) => {
       let usedpref = Math.floor(Math.log(bytes) / Math.log(1000));
-      if (usedpref > 4) {usedpref = 4};
-      let str = src + ' -- ' + bytes/(Math.pow(1000, usedpref)) + ' ' + prefixes[usedpref] + 'B --> ' + dest + ';\n';
+      if (usedpref > 4) {
+        usedpref = 4;
+      }
+      const str = src + ' -- ' + bytes / Math.pow(1000, usedpref) + ' ' + prefixes[usedpref] + 'B --> ' + dest + ';\n';
       graphString += str;
     });
   });
 
-  // checking if graph syntax is valid
-  mermaid.parseError = function() {
-    console.log('incorrect graph syntax for graph:\n'+graphString);
-    return (
-      <div><p>Incorrect Graph Syntax</p></div>
-    );
-  }
-  if (mermaid.parse(graphString)) {
-    let graphElement = document.getElementsByClassName("graphDiv")[0];
-    // null check because the div does not exist at this point during the first run
-    if (graphElement != null) {
-      let insertSvg = function(svgCode: string){
-        graphElement!.innerHTML = svgCode;
-      }
-      mermaid.mermaidAPI.render('graphDiv', graphString, insertSvg);
+  // Render mermaid diagram using the v11 async API
+  useEffect(() => {
+    if (!containerRef.current) {
+      return;
     }
-  }
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: boxColor,
+        secondaryColor: theme.colors.background.canvas,
+        tertiaryColor: theme.colors.background.canvas,
+        primaryTextColor: theme.colors.text.maxContrast,
+        lineColor: theme.colors.text.maxContrast,
+      },
+    });
+    const renderDiagram = async () => {
+      try {
+        const { svg } = await mermaid.render('dependency-graph', graphString);
+        if (containerRef.current) {
+          containerRef.current.innerHTML = svg;
+        }
+      } catch (e) {
+        console.error('Mermaid render error:', e);
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '<p>Error rendering dependency graph</p>';
+        }
+      }
+    };
+    renderDiagram();
+  });
 
-  // manually display first time, since render has no target yet
-  return (
-    <div className="graphDiv">
-      <Mermaid chart={graphString}/>
-    </div>
-  );
+  return <div ref={containerRef} style={{ width, height, overflow: 'auto' }} />;
 };

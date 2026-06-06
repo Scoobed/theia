@@ -95,6 +95,10 @@ func (r *REST) NamespaceScoped() bool {
 	return false
 }
 
+func (r *REST) GetSingularName() string {
+	return "clickhouse"
+}
+
 func (r *REST) ConvertToTable(ctx context.Context, obj runtime.Object, tableOptions runtime.Object) (*metav1.Table, error) {
 	return rest.NewDefaultTableConvertor(stats.Resource("clickhouse")).ConvertToTable(ctx, obj, tableOptions)
 }
