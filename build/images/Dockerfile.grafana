@@ -1,0 +1,19 @@
+FROM grafana/grafana:13.0.1
+
+USER root
+
+# Install the ClickHouse datasource plugin
+RUN grafana cli plugins install grafana-clickhouse-datasource
+
+# Copy Theia custom plugins
+COPY plugins/grafana-custom-plugins/grafana-sankey-plugin/dist/ /var/lib/grafana/plugins/theia-grafana-sankey-plugin/
+COPY plugins/grafana-custom-plugins/grafana-chord-plugin/dist/ /var/lib/grafana/plugins/theia-grafana-chord-plugin/
+COPY plugins/grafana-custom-plugins/grafana-dependency-plugin/dist/ /var/lib/grafana/plugins/theia-grafana-dependency-plugin/
+
+# Fix ownership
+RUN chown -R grafana:root /var/lib/grafana/plugins/
+
+# Allow unsigned Theia plugins
+ENV GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=theia-grafana-sankey-plugin,theia-grafana-chord-plugin,theia-grafana-dependency-plugin
+
+USER grafana

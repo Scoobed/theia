@@ -223,7 +223,7 @@ grafana:
   image: 
     repository: "ghcr.io/scoobed/theia-grafana"
     pullPolicy: "IfNotPresent"
-    tag: "11.6.0"
+    tag: "v0.9.0"
   # -- Credentials to login to Grafana. They will be stored in a Secret.
   loginSecret:
     username: "admin"
@@ -234,14 +234,9 @@ grafana:
     type: NodePort
     # -- TCP port number for the Grafana service.
     tcpPort: 3000
-  # -- Grafana plugins to install.
-  # -- Grafana plugins to install at startup. Bundled plugins (sankey, chord,
-  # dependency) are mounted from ConfigMaps and do not need to be listed here.
-  # Sankey and Chord plugins are bundled via ConfigMap (no download needed).
-  # Dependency and ClickHouse datasource are installed at startup.
-  installPlugins:
-    - https://downloads.antrea.io/artifacts/grafana-custom-plugins/theia-grafana-dependency-plugin-1.0.2.zip;theia-grafana-dependency-plugin
-    - grafana-clickhouse-datasource 2.2.0
+  # All plugins (sankey, chord, dependency, clickhouse-datasource) are
+  # pre-installed in the custom theia-grafana Docker image. No runtime
+  # downloads are needed.
   # -- The dashboards to be displayed in Grafana UI. The files must be put under
   # provisioning/dashboards.
   dashboards:

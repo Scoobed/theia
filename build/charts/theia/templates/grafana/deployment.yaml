@@ -28,32 +28,11 @@ spec:
           volumeMounts:
           - mountPath: /data
             name: grafana-pv
-        - name: init-plugins
-          image: docker.io/busybox
-          imagePullPolicy: IfNotPresent
-          command:
-            - sh
-            - -c
-            - |
-              mkdir -p /plugins/theia-grafana-sankey-plugin
-              cp /bundled-plugins/sankey-module.js /plugins/theia-grafana-sankey-plugin/module.js
-              cp /bundled-plugins/sankey-plugin.json /plugins/theia-grafana-sankey-plugin/plugin.json
-              mkdir -p /plugins/theia-grafana-chord-plugin
-              cp /bundled-plugins/chord-module.js /plugins/theia-grafana-chord-plugin/module.js
-              cp /bundled-plugins/chord-plugin.json /plugins/theia-grafana-chord-plugin/plugin.json
-              chown -R 472:472 /plugins
-          volumeMounts:
-          - mountPath: /bundled-plugins
-            name: bundled-plugins
-          - mountPath: /plugins
-            name: grafana-plugins
       containers:
         - name: grafana
           image: {{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}
           imagePullPolicy: {{ .Values.grafana.image.pullPolicy }}
           env:
-            - name: GF_INSTALL_PLUGINS
-              value: {{ join "," .Values.grafana.installPlugins }}
             - name: CLICKHOUSE_USERNAME
               valueFrom:
                 secretKeyRef: 
@@ -68,8 +47,6 @@ spec:
               value: "true"
             - name: GF_AUTH_ANONYMOUS_ENABLED
               value: "false"
-            - name: GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS
-              value: "theia-grafana-sankey-plugin,theia-grafana-chord-plugin,theia-grafana-dependency-plugin"
             - name: GF_SECURITY_ADMIN_USER
               valueFrom:
                 secretKeyRef:
@@ -125,12 +102,6 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/grafana
               name: grafana-pv
-            - mountPath: /var/lib/grafana/plugins/theia-grafana-sankey-plugin
-              name: grafana-plugins
-              subPath: theia-grafana-sankey-plugin
-            - mountPath: /var/lib/grafana/plugins/theia-grafana-chord-plugin
-              name: grafana-plugins
-              subPath: theia-grafana-chord-plugin
             - mountPath: /etc/grafana/provisioning/datasources
               name: grafana-datasource-provider
             - mountPath: /etc/grafana/provisioning/dashboards
@@ -141,11 +112,6 @@ spec:
         - name: grafana-pv
           persistentVolumeClaim:
             claimName: grafana-pvc
-        - name: bundled-plugins
-          configMap:
-            name: grafana-bundled-plugins
-        - name: grafana-plugins
-          emptyDir: {}
         - name: grafana-datasource-provider
           configMap:
             name: grafana-datasource-provider

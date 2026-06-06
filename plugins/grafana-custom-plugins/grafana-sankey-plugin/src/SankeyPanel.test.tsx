@@ -1,16 +1,21 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { SankeyPanel } from './SankeyPanel';
 import { LoadingState, PanelProps, TimeRange, toDataFrame } from '@grafana/data';
 
-// Mock react-google-charts to avoid loading Google Charts in tests
-jest.mock('react-google-charts', () => ({
-  Chart: (props: any) => <div data-testid="google-chart" data-charttype={props.chartType} data-chart-data={JSON.stringify(props.data)} />,
+// Mock @grafana/ui useTheme2
+jest.mock('@grafana/ui', () => ({
+  useTheme2: () => ({
+    colors: {
+      text: { primary: '#000' },
+      border: { medium: '#ccc' },
+    },
+  }),
 }));
 
 describe('Sankey Diagram test', () => {
-  it('Should render Chart with correct data', () => {
+  it('Should render SVG with data', () => {
     const props = {
       data: {
         series: [
@@ -32,20 +37,13 @@ describe('Sankey Diagram test', () => {
       options: {},
     } as unknown as PanelProps;
 
-    render(<SankeyPanel {...props} />);
-
-    const chart = screen.getByTestId('google-chart');
-    expect(chart).toBeInTheDocument();
-    expect(chart).toHaveAttribute('data-charttype', 'Sankey');
-
-    const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
-    expect(chartData).toEqual([
-      ['From', 'To', 'Bytes'],
-      ['alpine0', 'alpine1 ', 10000],
-    ]);
+    const { container } = render(React.createElement(SankeyPanel, props));
+    const svg = container.querySelector('svg');
+    expect(svg).toBeInTheDocument();
+    expect(svg?.getAttribute('width')).toBe('600');
   });
 
-  it('Should show fallback when no data', () => {
+  it('Should show No data when empty', () => {
     const props = {
       data: {
         series: [],
@@ -57,13 +55,8 @@ describe('Sankey Diagram test', () => {
       options: {},
     } as unknown as PanelProps;
 
-    render(<SankeyPanel {...props} />);
-
-    const chart = screen.getByTestId('google-chart');
-    const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '[]');
-    expect(chartData).toEqual([
-      ['From', 'To', 'Bytes'],
-      ['Source N/A', 'Destination N/A', 1],
-    ]);
+    const { container } = render(React.createElement(SankeyPanel, props));
+    const text = container.querySelector('text');
+    expect(text?.textContent).toBe('No data');
   });
 });

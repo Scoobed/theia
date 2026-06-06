@@ -234,8 +234,14 @@ spark-jobs:
 	docker build --pull -t antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.spark-jobs.ubuntu .
 	docker tag antrea/theia-spark-jobs:$(DOCKER_IMG_VERSION) antrea/theia-spark-jobs
 
+.PHONY: theia-grafana
+theia-grafana:
+	@echo "===> Building antrea/theia-grafana Docker image <==="
+	docker build --pull -t antrea/theia-grafana:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.grafana .
+	docker tag antrea/theia-grafana:$(DOCKER_IMG_VERSION) antrea/theia-grafana
+
 .PHONY: docker-images
-docker-images: clickhouse-monitor clickhouse-server theia-manager spark-jobs
+docker-images: clickhouse-monitor clickhouse-server theia-manager spark-jobs theia-grafana
 
 # Targets to pull, retag, and push upstream images to ghcr.io/scoobed.
 # Mirrors the docker_update_theia.yml workflow.
