@@ -97,49 +97,106 @@ For more information about Antrea Helm chart, please refer to
 
 ## Theia Installation
 
-Please install Flow Aggregator and Theia through Helm.
+### Self-Hosted Installation (Recommended)
 
-For Theia v0.1, please clone the repository and checkout branch `release-0.1`.
-Both Helm charts are located under the folder `build/charts`.
+Theia v0.9.0+ supports fully self-hosted installation with all Docker images
+hosted on GHCR and Grafana plugins embedded in a custom image. No external
+downloads are required at runtime.
 
-From Theia v0.2 and Antrea v1.8, the Flow Aggregator Helm chart is moved from
-Theia repository to Antrea repository; and the Helm charts are added to Antrea
-Helm repo. Please add the repo by running the following command:
+#### Prerequisites
+
+1. Install Antrea with Flow Exporter enabled:
+
+```bash
+helm repo add antrea https://charts.antrea.io
+helm install antrea antrea/antrea -n kube-system \
+  --set featureGates.FlowExporter=true --set flowExporter.enable=true
+```
+
+2. Install the ClickHouse Operator CRDs:
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/Scoobed/theia/ghcr-image-migration/build/charts/theia/crds/clickhouse-operator-install-bundle.yaml
+```
+
+3. Install the Flow Aggregator:
+
+```bash
+helm install flow-aggregator antrea/flow-aggregator \
+  --set clickHouse.enable=true,recordContents.podLabels=true \
+  -n flow-aggregator --create-namespace
+```
+
+#### Install Theia
+
+Install directly from the repository Helm chart:
+
+```bash
+helm install theia build/charts/theia -n flow-visibility --create-namespace
+```
+
+Or from the packaged chart:
+
+```bash
+helm repo add theia https://raw.githubusercontent.com/Scoobed/theia/ghcr-image-migration/charts
+helm install theia theia/theia --version 0.9.0 -n flow-visibility --create-namespace
+```
+
+#### Docker Images
+
+All images are hosted on `ghcr.io/scoobed/` with the `theia-` prefix:
+
+| Image | Description |
+|-------|-------------|
+| `theia-grafana:v0.9.0` | Custom Grafana 13.0.2 with all plugins embedded |
+| `theia-manager:v0.9.0` | Theia Manager API server |
+| `theia-clickhouse-server:v0.9.0` | ClickHouse with schema management |
+| `theia-clickhouse-monitor:v0.9.0` | ClickHouse storage monitor |
+| `theia-spark-jobs:v0.9.0` | Spark jobs for policy recommendation |
+| `theia-clickhouse-operator:0.27.0` | Altinity ClickHouse Operator |
+| `theia-metrics-exporter:0.27.0` | ClickHouse metrics exporter |
+| `theia-zookeeper:3.9.5` | ZooKeeper for ClickHouse replication |
+
+The Grafana image includes all plugins pre-installed:
+- `theia-grafana-sankey-plugin` v2.0.0 (d3-sankey visualization)
+- `theia-grafana-chord-plugin` v2.0.0 (d3 chord diagram)
+- `theia-grafana-dependency-plugin` v2.0.0 (mermaid dependency graph)
+- `grafana-clickhouse-datasource` (latest compatible version)
+
+No internet access is required at pod startup.
+
+#### Building Images
+
+```bash
+# Build all Go-based images
+make docker-images
+
+# Build custom Grafana image (requires plugin dist/ directories to exist)
+make theia-grafana
+
+# Pull and retag upstream images
+make pull-upstream-images CH_OPERATOR_TAG=0.27.0 CH_SERVER_TAG=25.8 GRAFANA_TAG=13.0.2 ZOOKEEPER_TAG=3.9.5
+```
+
+### Upstream Installation
+
+For upstream installation from the Antrea Helm repo:
 
 ```bash
 helm repo add antrea https://charts.antrea.io
 helm repo update
 ```
 
-To install Flow Aggregator, please run the following command:
+To install Flow Aggregator:
 
 ```bash
 helm install flow-aggregator antrea/flow-aggregator --set clickHouse.enable=true,recordContents.podLabels=true -n flow-aggregator --create-namespace
 ```
 
-To enable [Grafana Flow Collector](network-flow-visibility.md),
-[NetworkPolicy Recommendation](networkpolicy-recommendation.md) and
-[Throughput Anomaly Detection](throughput-anomaly-detection.md), please install
-Theia by running the following commands:
-
-```bash
-helm install theia antrea/theia --set sparkOperator.enable=true -n flow-visibility --create-namespace
-```
-
-From Theia v0.3, [Theia Command-line Tool](theia-cli.md) uses Theia Manager
-as a layer to connect and manage other resources like ClickHouse and Spark
-Operator. To enable Theia Manager, please install Theia by running the
-following commands:
+To install Theia with all features:
 
 ```bash
 helm install theia antrea/theia --set sparkOperator.enable=true,theiaManager.enable=true -n flow-visibility --create-namespace
-```
-
-To enable only Grafana Flow Collector, please install Theia by running the
-following commands:
-
-```bash
-helm install theia antrea/theia -n flow-visibility --create-namespace
 ```
 
 These will install the latest available versions of Flow Aggregator and Theia.
