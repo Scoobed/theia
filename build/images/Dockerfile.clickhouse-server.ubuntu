@@ -1,5 +1,5 @@
-ARG GO_VERSION
-FROM golang:${GO_VERSION} as clickhouse-schema-management-build
+ARG GO_VERSION=latest
+FROM golang:${GO_VERSION} AS clickhouse-schema-management-build
 
 COPY . /theia
 WORKDIR /theia

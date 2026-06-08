@@ -1,5 +1,5 @@
-ARG GO_VERSION
-FROM golang:${GO_VERSION} as theia-manager-build
+ARG GO_VERSION=latest
+FROM golang:${GO_VERSION} AS theia-manager-build
 
 COPY . /theia
 WORKDIR /theia

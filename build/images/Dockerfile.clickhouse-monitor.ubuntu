@@ -1,5 +1,5 @@
-ARG GO_VERSION
-FROM golang:${GO_VERSION} as clickhouse-monitor-build
+ARG GO_VERSION=latest
+FROM golang:${GO_VERSION} AS clickhouse-monitor-build
 
 COPY . /theia
 WORKDIR /theia
@@ -13,7 +13,7 @@ RUN mkdir -p clickhouse-monitor-coverage
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
 LABEL description="A docker image to deploy the ClickHouse monitor plugin."
 
-ENV USER root
+ENV USER=root
 
 COPY --from=clickhouse-monitor-build /theia/bin/clickhouse-monitor /
 
