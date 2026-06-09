@@ -8,6 +8,11 @@ WORKDIR /theia
 RUN CGO_ENABLED=0 GOFLAGS=-mod=vendor make clickhouse-monitor-plugin
 
 FROM ubuntu:26.04
+
+# Update pebble to latest version for security fixes
+RUN apt-get update && apt-get install -y --no-install-recommends pebble && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN mkdir -p clickhouse-monitor-coverage
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
