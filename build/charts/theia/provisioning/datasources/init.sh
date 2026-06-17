@@ -19,5 +19,5 @@ set -e
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source $THIS_DIR/create_table.sh
-../clickhouse-schema-management
+/clickhouse-schema-management
 createTable
