@@ -9,9 +9,13 @@ RUN CGO_ENABLED=0 GOFLAGS=-mod=vendor make clickhouse-monitor-plugin
 
 FROM ubuntu:26.04
 
-# Update pebble to latest version for security fixes
-RUN apt-get update && apt-get install -y --no-install-recommends pebble && \
-    rm -rf /var/lib/apt/lists/*
+# Update Canonical Pebble to v1.31.0 for security fixes
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && \
+    wget -q https://github.com/canonical/pebble/releases/download/v1.31.0/pebble_v1.31.0_linux_amd64.tar.gz && \
+    tar xzf pebble_v1.31.0_linux_amd64.tar.gz && \
+    mv pebble /usr/bin/pebble && \
+    rm -f pebble_v1.31.0_linux_amd64.tar.gz && \
+    apt-get purge -y wget && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p clickhouse-monitor-coverage
 

@@ -140,11 +140,28 @@ func initializeVersionMap() error {
 		}
 		// fileName example: 000001_0-1-0.down.sql
 		fileNameArr := strings.Split(strings.Split(file.Name(), ".")[0], "_")
+		if len(fileNameArr) < 2 {
+			klog.InfoS("Skipping file with unexpected name format", "file", file.Name())
+			continue
+		}
 		versionNumber, err := strconv.ParseInt(fileNameArr[0], 10, 64)
 		if err != nil {
 			return fmt.Errorf("error when parsing the version number: %v", err)
 		}
 		version := strings.Replace(fileNameArr[1], "-", ".", -1)
+		// Validate that the version string is numeric (e.g. "0.6.0", not "antrea.v2.6")
+		parts := strings.Split(version, ".")
+		isNumeric := true
+		for _, part := range parts {
+			if _, err := strconv.Atoi(part); err != nil {
+				isNumeric = false
+				break
+			}
+		}
+		if !isNumeric {
+			klog.InfoS("Skipping migration file with non-numeric version", "file", file.Name(), "version", version)
+			continue
+		}
 		// File <golang-migrate-version>_<theia-version>.up.sql is expected to be
 		// applied when upgrading from <theia-version>.
 		// golang-migrate applies this file when upgrading from <golang-migrate-version> - 1.
@@ -233,10 +250,17 @@ func roundUpVersion(version string) (int, error) {
 }
 
 // Return true if version a is earlier than version b.
+// Both versions must be numeric dot-separated strings (e.g. "0.6.0").
+// Returns an error if either version contains non-numeric components.
 func versionLessThan(a, b string) (bool, error) {
 	as := strings.Split(a, ".")
 	bs := strings.Split(b, ".")
-	for i := 0; i < len(as); i++ {
+	// Compare up to the shorter length
+	maxLen := len(as)
+	if len(bs) < maxLen {
+		maxLen = len(bs)
+	}
+	for i := 0; i < maxLen; i++ {
 		xi, err := strconv.Atoi(as[i])
 		if err != nil {
 			return false, fmt.Errorf("error when parsing version %s: %v", a, err)
