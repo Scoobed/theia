@@ -20,4 +20,22 @@ THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 source $THIS_DIR/create_table.sh
 /clickhouse-schema-management
-createTable
+
+# Retry createTable up to 5 times with 10s delay.
+# The distributed tables (flows, recommendations, etc.) depend on the
+# ClickHouse cluster macros ({cluster}, {shard}, {replica}) which may
+# not be available immediately when the operator is still configuring.
+MAX_RETRIES=5
+RETRY_DELAY=10
+for i in $(seq 1 $MAX_RETRIES); do
+  if createTable; then
+    echo "Tables created successfully on attempt $i"
+    break
+  fi
+  if [ $i -eq $MAX_RETRIES ]; then
+    echo "Failed to create tables after $MAX_RETRIES attempts"
+    exit 1
+  fi
+  echo "Table creation attempt $i failed, retrying in ${RETRY_DELAY}s..."
+  sleep $RETRY_DELAY
+done
