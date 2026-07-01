@@ -24,9 +24,9 @@ spec:
         - name: init-pv
           image: docker.io/busybox
           imagePullPolicy: IfNotPresent
-          command: ["chown", "-R", "472:472", "/data"]
+          command: ["chown", "-R", "472:472", "/var/lib/grafana"]
           volumeMounts:
-          - mountPath: /data
+          - mountPath: /var/lib/grafana
             name: grafana-pv
       containers:
         - name: grafana

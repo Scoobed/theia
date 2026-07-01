@@ -1,3 +1,19 @@
+# -- ClickHouse Operator images. These override the images in the CRD bundle.
+# The operator is installed via the CRD bundle in crds/. To use custom images,
+# update these values AND run the generate-operator-bundle.sh script, or
+# manually update crds/clickhouse-operator-install-bundle.yaml.
+clickhouseOperator:
+  # -- Container image for the ClickHouse Operator.
+  image:
+    repository: "ghcr.io/scoobed/theia-clickhouse-operator"
+    tag: "0.27.0"
+  # -- Container image for the ClickHouse Metrics Exporter.
+  metricsExporter:
+    image:
+      repository: "ghcr.io/scoobed/theia-metrics-exporter"
+      tag: "0.27.0"
+  # -- Namespace where the ClickHouse Operator is installed.
+  namespace: "kube-system"
 clickhouse:
   # -- Container image used by ClickHouse.
   image: 

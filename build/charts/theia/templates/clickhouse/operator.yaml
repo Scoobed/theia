@@ -1,0 +1,1160 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    clickhouse.altinity.com/chop: 0.27.0
+  name: clickhouse-operator
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    clickhouse.altinity.com/chop: 0.27.0
+  name: clickhouse-operator-kube-system
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  - services
+  - persistentvolumeclaims
+  - secrets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - events
+  verbs:
+  - create
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
+  verbs:
+  - get
+  - patch
+  - update
+  - delete
+- apiGroups:
+  - apps
+  resourceNames:
+  - clickhouse-operator
+  resources:
+  - deployments
+  verbs:
+  - get
+  - patch
+  - update
+  - delete
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - clickhouse.altinity.com
+  resources:
+  - clickhouseinstallations
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - delete
+- apiGroups:
+  - clickhouse.altinity.com
+  resources:
+  - clickhouseinstallationtemplates
+  - clickhouseoperatorconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - clickhouse.altinity.com
+  resources:
+  - clickhouseinstallations/finalizers
+  - clickhouseinstallationtemplates/finalizers
+  - clickhouseoperatorconfigurations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - clickhouse.altinity.com
+  resources:
+  - clickhouseinstallations/status
+  - clickhouseinstallationtemplates/status
+  - clickhouseoperatorconfigurations/status
+  verbs:
+  - get
+  - update
+  - patch
+  - create
+  - delete
+- apiGroups:
+  - clickhouse-keeper.altinity.com
+  resources:
+  - clickhousekeeperinstallations
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - delete
+- apiGroups:
+  - clickhouse-keeper.altinity.com
+  resources:
+  - clickhousekeeperinstallations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - clickhouse-keeper.altinity.com
+  resources:
+  - clickhousekeeperinstallations/status
+  verbs:
+  - get
+  - update
+  - patch
+  - create
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    clickhouse.altinity.com/chop: 0.27.0
+  name: clickhouse-operator-kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: clickhouse-operator-kube-system
+subjects:
+- kind: ServiceAccount
+  name: clickhouse-operator
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    clickhouse.altinity.com/chop: 0.27.0
+  name: clickhouse-operator
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  - services
+  - persistentvolumeclaims
+  - secrets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - events
+  verbs:
+  - create
+- apiGroups:
+  - ''
+  resources:
+  - persistentvolumes
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - delete
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
+  verbs:
+  - get
+  - patch
+  - update
+  - delete
+- apiGroups:
+  - apps
+  resourceNames:
+  - clickhouse-operator
+  resources:
+  - deployments
+  verbs:
+  - get
+  - patch
+  - update
+  - delete
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - clickhouse.altinity.com
+  resources:
+  - clickhouseinstallations
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - delete
+- apiGroups:
+  - clickhouse.altinity.com
+  resources:
+  - clickhouseinstallationtemplates
+  - clickhouseoperatorconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - clickhouse.altinity.com
+  resources:
+  - clickhouseinstallations/finalizers
+  - clickhouseinstallationtemplates/finalizers
+  - clickhouseoperatorconfigurations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - clickhouse.altinity.com
+  resources:
+  - clickhouseinstallations/status
+  - clickhouseinstallationtemplates/status
+  - clickhouseoperatorconfigurations/status
+  verbs:
+  - get
+  - update
+  - patch
+  - create
+  - delete
+- apiGroups:
+  - clickhouse-keeper.altinity.com
+  resources:
+  - clickhousekeeperinstallations
+  verbs:
+  - get
+  - list
+  - watch
+  - patch
+  - update
+  - delete
+- apiGroups:
+  - clickhouse-keeper.altinity.com
+  resources:
+  - clickhousekeeperinstallations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - clickhouse-keeper.altinity.com
+  resources:
+  - clickhousekeeperinstallations/status
+  verbs:
+  - get
+  - update
+  - patch
+  - create
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    clickhouse.altinity.com/chop: 0.27.0
+  name: clickhouse-operator
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: clickhouse-operator
+subjects:
+- kind: ServiceAccount
+  name: clickhouse-operator
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data:
+  config.yaml: "# IMPORTANT\n# This file is auto-generated\n# Do not edit this file\
+    \ - all changes would be lost\n# Edit appropriate template in the following folder:\n\
+    # deploy/builder/templates-config\n# IMPORTANT\n#\n# Template parameters available:\n\
+    #   WATCH_NAMESPACES=\n#   CH_USERNAME_PLAIN=\n#   CH_PASSWORD_PLAIN=\n#   CH_CREDENTIALS_SECRET_NAMESPACE=\n\
+    #   CH_CREDENTIALS_SECRET_NAME=clickhouse-operator\n#   VERBOSITY=1\n\n################################################\n\
+    ##\n## Watch section\n##\n################################################\nwatch:\n\
+    \  # Namespaces where clickhouse-operator watches for events.\n  # Concurrently\
+    \ running operators should watch on different namespaces.\n  # `include` and `exclude`\
+    \ accept literal namespace names or regexp patterns.\n  # Empty `include` watches\
+    \ the operator's own namespace (or all namespaces when\n  # the operator runs\
+    \ in `kube-system`); use [\".*\"] to force watch-all elsewhere.\n  # Empty `exclude`\
+    \ matches none. `exclude` is applied after `include`.\n  namespaces:\n    include:\
+    \ []\n    exclude: []\n\n  # Behavior when ClickHouseOperatorConfiguration changes:\
+    \ none | restart\n  configuration:\n    onChange: restart\n\nclickhouse:\n  configuration:\n\
+    \    ################################################\n    ##\n    ## Configuration\
+    \ files section\n    ##\n    ################################################\n\
+    \    file:\n      # Each 'path' can be either absolute or relative.\n      # In\
+    \ case path is absolute - it is used as is\n      # In case path is relative -\
+    \ it is relative to the folder where configuration file you are reading right\
+    \ now is located.\n      path:\n        # Path to the folder where ClickHouse\
+    \ configuration files common for all instances within a CHI are located.\n   \
+    \     common: chi/config.d\n        # Path to the folder where ClickHouse configuration\
+    \ files unique for each instance (host) within a CHI are located.\n        host:\
+    \ chi/conf.d\n        # Path to the folder where ClickHouse configuration files\
+    \ with users' settings are located.\n        # Files are common for all instances\
+    \ within a CHI.\n        user: chi/users.d\n    ################################################\n\
+    \    ##\n    ## Configuration users section\n    ##\n    ################################################\n\
+    \    user:\n      # Default settings for user accounts, created by the operator.\n\
+    \      # IMPORTANT. These are not access credentials or settings for 'default'\
+    \ user account,\n      # it is a template for filling out missing fields for all\
+    \ user accounts to be created by the operator,\n      # with the following EXCEPTIONS:\n\
+    \      # 1. 'default' user account DOES NOT use provided password, but uses all\
+    \ the rest of the fields.\n      #    Password for 'default' user account has\
+    \ to be provided explicitly, if to be used.\n      # 2. CHOP user account DOES\
+    \ NOT use:\n      #    - profile setting. It uses predefined profile called 'clickhouse_operator'\n\
+    \      #    - quota setting. It uses empty quota name.\n      #    - networks\
+    \ IP setting. Operator specifies 'networks/ip' user setting to match operators'\
+    \ pod IP only.\n      #    - password setting. Password for CHOP account is used\
+    \ from 'clickhouse.access.*' section\n      default:\n        # Default values\
+    \ for ClickHouse user account(s) created by the operator\n        #   1. user/profile\
+    \ - string\n        #   2. user/quota - string\n        #   3. user/networks/ip\
+    \ - multiple strings\n        #   4. user/password - string\n        # These values\
+    \ can be overwritten on per-user basis.\n        profile: \"default\"\n      \
+    \  quota: \"default\"\n        networksIP:\n          - \"::1\"\n          - \"\
+    127.0.0.1\"\n        password: \"default\"\n    ################################################\n\
+    \    ##\n    ## Configuration network section\n    ##\n    ################################################\n\
+    \    network:\n      # Default host_regexp to limit network connectivity from\
+    \ outside\n      hostRegexpTemplate: \"(chi-{chi}-[^.]+\\\\d+-\\\\d+|clickhouse\\\
+    \\-{chi})\\\\.{namespace}\\\\.svc\\\\.cluster\\\\.local$\"\n\n  ################################################\n\
+    \  ##\n  ## Configuration restart policy section\n  ## Configuration restart policy\
+    \ describes what configuration changes require ClickHouse restart\n  ##\n  ################################################\n\
+    \  configurationRestartPolicy:\n    rules:\n      # IMPORTANT!\n      # Special\
+    \ version of \"*\" - default version - has to satisfy all ClickHouse versions.\n\
+    \      # Default version will also be used in case ClickHouse version is unknown.\n\
+    \      # ClickHouse version may be unknown due to host being down - for example,\
+    \ because of incorrect \"settings\" section.\n      # ClickHouse is not willing\
+    \ to start in case incorrect/unknown settings are provided in config file.\n \
+    \     - version: \"*\"\n        rules:\n          # see https://kb.altinity.com/altinity-kb-setup-and-maintenance/altinity-kb-server-config-files/#server-config-configxml-sections-which-dont-require-restart\n\
+    \          # to be replaced with \"select * from system.server_settings where\
+    \ changeable_without_restart = 'No'\"\n\n          - settings/*: \"yes\"\n\n \
+    \         # single values\n          - settings/access_control_path: \"no\"\n\
+    \          - settings/dictionaries_config: \"no\"\n          - settings/max_server_memory_*:\
+    \ \"no\"\n          - settings/max_*_to_drop: \"no\"\n          - settings/max_concurrent_queries:\
+    \ \"no\"\n          - settings/models_config: \"no\"\n          - settings/user_defined_executable_functions_config:\
+    \ \"no\"\n\n          # structured XML\n          - settings/logger/*: \"no\"\n\
+    \          - settings/macros/*: \"no\"\n          - settings/remote_servers/*:\
+    \ \"no\"\n          - settings/user_directories/*: \"no\"\n\n          # these\
+    \ settings should not lead to pod restarts\n          - settings/display_secrets_in_show_and_select:\
+    \ \"no\"\n\n          - zookeeper/*: \"no\"\n\n          - files/*.xml: \"yes\"\
+    \n          - files/config.d/*.xml: \"yes\"\n          - files/config.d/*dict*.xml:\
+    \ \"no\"\n          - files/config.d/*no_restart*: \"no\"\n\n          # exceptions\
+    \ in default profile\n          - profiles/default/background_*_pool_size: \"\
+    yes\"\n          - profiles/default/max_*_for_server: \"yes\"\n      - version:\
+    \ \"21.*\"\n        rules:\n          - settings/logger: \"yes\"\n\n  #################################################\n\
+    \  ##\n  ## Access to ClickHouse instances\n  ##\n  ################################################\n\
+    \  access:\n    # Possible values for 'scheme' are:\n    #   1. http - force http\
+    \ to be used to connect to ClickHouse instances\n    #   2. https - force https\
+    \ to be used to connect to ClickHouse instances\n    #   3. auto - either http\
+    \ or https is selected based on open ports\n    scheme: \"auto\"\n    # ClickHouse\
+    \ credentials (username, password and port) to be used by the operator to connect\
+    \ to ClickHouse instances.\n    # These credentials are used for:\n    #   1.\
+    \ Metrics requests\n    #   2. Schema maintenance\n    # User with these credentials\
+    \ can be specified in additional ClickHouse .xml config files,\n    # located\
+    \ in 'clickhouse.configuration.file.path.user' folder\n    username: \"\"\n  \
+    \  password: \"\"\n    rootCA: \"\"\n\n    # Location of the k8s Secret with username\
+    \ and password to be used by the operator to connect to ClickHouse instances.\n\
+    \    # Can be used instead of explicitly specified username and password available\
+    \ in sections:\n    #   - clickhouse.access.username\n    #   - clickhouse.access.password\n\
+    \    # Secret should have two keys:\n    #   1. username\n    #   2. password\n\
+    \    secret:\n      # Empty `namespace` means that k8s secret would be looked\
+    \ in the same namespace where operator's pod is running.\n      namespace: \"\"\
+    \n      # Empty `name` means no k8s Secret would be looked for\n      name: \"\
+    clickhouse-operator\"\n    # Port where to connect to ClickHouse instances to\n\
+    \    port: 8123\n\n    # Timeouts used to limit connection and queries from the\
+    \ operator to ClickHouse instances\n    # Specified in seconds.\n    timeouts:\n\
+    \      # Timout to setup connection from the operator to ClickHouse instances.\
+    \ In seconds.\n      connect: 5\n      # Timout to perform SQL query from the\
+    \ operator to ClickHouse instances. In seconds.\n      query: 4\n\n  ################################################\n\
+    \  ##\n  ## Addons specifies additional configuration sections\n  ## Should it\
+    \ be called something like \"templates\"?\n  ##\n  ################################################\n\
+    \  addons:\n    rules:\n      - version: \"*\"\n        spec:\n          configuration:\n\
+    \            users:\n            profiles:\n            quotas:\n            settings:\n\
+    \            files:\n      - version: \">= 23.3\"\n        spec:\n          configuration:\n\
+    \            ###\n            ### users.d is global while description depends\
+    \ on CH version which may vary on per-host basis\n            ### In case of global-ness\
+    \ this may be better to implement via auto-templates\n            ###\n      \
+    \      ### As a solution, this may be applied on the whole cluster based on any\
+    \ of its hosts\n            ###\n            ### What to do when host is just\
+    \ created? CH version is not known prior to CH started and user config is required\
+    \ before CH started.\n            ### We do not have any info about the cluster\
+    \ on initial creation\n            ###\n            users:\n              \"{clickhouseOperatorUser}/access_management\"\
+    : 1\n              \"{clickhouseOperatorUser}/named_collection_control\": 1\n\
+    \              \"{clickhouseOperatorUser}/show_named_collections\": 1\n      \
+    \        \"{clickhouseOperatorUser}/show_named_collections_secrets\": 1\n    \
+    \        profiles:\n            quotas:\n            settings:\n            files:\n\
+    \      - version: \">= 23.5\"\n        spec:\n          configuration:\n     \
+    \       users:\n            profiles:\n              clickhouse_operator/format_display_secrets_in_show_and_select:\
+    \ 1\n            quotas:\n            settings:\n              ##\n          \
+    \    ## this may be added on per-host basis into host's conf.d folder\n      \
+    \        ##\n              display_secrets_in_show_and_select: 1\n           \
+    \ files:\n\n  #################################################\n  ##\n  ## Metrics\
+    \ collection\n  ##\n  ################################################\n\n  metrics:\n\
+    \    # Timeouts used to limit connection and queries from the metrics exporter\
+    \ to ClickHouse instances\n    # Specified in seconds.\n    timeouts:\n      #\
+    \ Timeout used to limit metrics collection request. In seconds.\n      # Upon\
+    \ reaching this timeout metrics collection is aborted and no more metrics are\
+    \ collected in this cycle.\n      # All collected metrics are returned.\n    \
+    \  collect: 9\n    # Regexp to match tables in system database to fetch metrics\
+    \ from.\n    # Multiple tables can be matched using regexp. Matched tables are\
+    \ merged using merge() table function.\n    # Default is \"^(metrics|custom_metrics)$\"\
+    \ which fetches from both system.metrics and system.custom_metrics.\n    tablesRegexp:\
+    \ \"^(metrics|custom_metrics)$\"\n    # List of regexps to match ClickHouse metrics\
+    \ to exclude from export.\n    # Regexps match internal metric names before Prometheus\
+    \ normalization and prefixing.\n    # Default is the per-CPU OS metrics filter\
+    \ shown below; set to [] to disable.\n    excludeRegexp:\n      - \"^metric\\\\\
+    .(OS.*CPU[0-9]+|CPUFrequencyMHz_[0-9]+)$\"\n\nkeeper:\n  configuration:\n    ################################################\n\
+    \    ##\n    ## Configuration files section\n    ##\n    ################################################\n\
+    \    file:\n      # Each 'path' can be either absolute or relative.\n      # In\
+    \ case path is absolute - it is used as is\n      # In case path is relative -\
+    \ it is relative to the folder where configuration file you are reading right\
+    \ now is located.\n      path:\n        # Path to the folder where Keeper configuration\
+    \ files common for all instances within a CHK are located.\n        common: chk/keeper_config.d\n\
+    \        # Path to the folder where Keeper configuration files unique for each\
+    \ instance (host) within a CHK are located.\n        host: chk/conf.d\n      \
+    \  # Path to the folder where Keeper configuration files with users' settings\
+    \ are located.\n        # Files are common for all instances within a CHI.\n \
+    \       user: chk/users.d\n\n################################################\n\
+    ##\n## Template(s) management section\n##\n################################################\n\
+    template:\n  chi:\n    # CHI template updates handling policy\n    # Possible\
+    \ policy values:\n    #   - ReadOnStart. Accept CHIT updates on the operator's\
+    \ start only.\n    #   - ApplyOnNextReconcile. Accept CHIT updates at all time.\
+    \ Apply new CHITs on next regular reconcile of the CHI\n    policy: ApplyOnNextReconcile\n\
+    \n    # Path to the folder where ClickHouseInstallation templates .yaml manifests\
+    \ are located.\n    # Templates are added to the list of all templates and used\
+    \ when CHI is reconciled.\n    # Templates are applied in sorted alpha-numeric\
+    \ order.\n    path: chi/templates.d\n  chk:\n    # CHK template updates handling\
+    \ policy\n    # Possible policy values:\n    #   - ReadOnStart. Accept CHIT updates\
+    \ on the operators start only.\n    #   - ApplyOnNextReconcile. Accept CHIT updates\
+    \ at all time. Apply new CHITs on next regular reconcile of the CHI\n    policy:\
+    \ ApplyOnNextReconcile\n\n    # Path to the folder where ClickHouseInstallation\
+    \ templates .yaml manifests are located.\n    # Templates are added to the list\
+    \ of all templates and used when CHI is reconciled.\n    # Templates are applied\
+    \ in sorted alpha-numeric order.\n    path: chk/templates.d\n\n################################################\n\
+    ##\n## Reconcile section\n##\n################################################\n\
+    reconcile:\n  # Reconcile runtime settings\n  runtime:\n    # Max number of concurrent\
+    \ CHI reconciles in progress\n    reconcileCHIsThreadsNumber: 10\n\n    # The\
+    \ operator reconciles shards concurrently in each CHI with the following limitations:\n\
+    \    #   1. Number of shards being reconciled (and thus having hosts down) in\
+    \ each CHI concurrently\n    #      can not be greater than 'reconcileShardsThreadsNumber'.\n\
+    \    #   2. Percentage of shards being reconciled (and thus having hosts down)\
+    \ in each CHI concurrently\n    #      can not be greater than 'reconcileShardsMaxConcurrencyPercent'.\n\
+    \    #   3. The first shard is always reconciled alone. Concurrency starts from\
+    \ the second shard and onward.\n    # Thus limiting number of shards being reconciled\
+    \ (and thus having hosts down) in each CHI by both number and percentage\n\n \
+    \   # Max number of concurrent shard reconciles within one cluster in progress\n\
+    \    reconcileShardsThreadsNumber: 5\n    # Max percentage of concurrent shard\
+    \ reconciles within one cluster in progress\n    reconcileShardsMaxConcurrencyPercent:\
+    \ 50\n\n  # Reconcile StatefulSet scenario\n  statefulSet:\n    # Create StatefulSet\
+    \ scenario\n    create:\n      # What to do in case created StatefulSet is not\
+    \ in 'Ready' after `reconcile.statefulSet.update.timeout` seconds\n      # Possible\
+    \ options:\n      # 1. abort - abort the process, do nothing with the problematic\
+    \ StatefulSet, leave it as it is,\n      #    do not try to fix or delete or update\
+    \ it, just abort reconcile cycle.\n      #    Do not proceed to the next StatefulSet(s)\
+    \ and wait for an admin to assist.\n      # 2. delete - delete newly created problematic\
+    \ StatefulSet and follow 'abort' path afterwards.\n      # 3. ignore - ignore\
+    \ an error, pretend nothing happened, continue reconcile and move on to the next\
+    \ StatefulSet.\n      onFailure: ignore\n\n    # Update StatefulSet scenario\n\
+    \    update:\n      # How many seconds to wait for created/updated StatefulSet\
+    \ to be 'Ready'\n      timeout: 300\n      # How many seconds to wait between\
+    \ checks/polls for created/updated StatefulSet status\n      pollInterval: 5\n\
+    \      # What to do in case updated StatefulSet is not in 'Ready' after `reconcile.statefulSet.update.timeout`\
+    \ seconds\n      # Possible options:\n      # 1. abort - abort the process, do\
+    \ nothing with the problematic StatefulSet, leave it as it is,\n      #    do\
+    \ not try to fix or delete or update it, just abort reconcile cycle.\n      #\
+    \    Do not proceed to the next StatefulSet(s) and wait for an admin to assist.\n\
+    \      # 2. rollback - delete Pod and rollback StatefulSet to previous Generation.\n\
+    \      #    Pod would be recreated by StatefulSet based on rollback-ed StatefulSet\
+    \ configuration.\n      #    Follow 'abort' path afterwards.\n      # 3. ignore\
+    \ - ignore an error, pretend nothing happened, continue reconcile and move on\
+    \ to the next StatefulSet.\n      onFailure: abort\n\n    # Recreate StatefulSet\
+    \ scenario\n    recreate:\n      # What to do in case operator is in need to recreate\
+    \ StatefulSet?\n      # Possible options:\n      # 1. abort - abort the process,\
+    \ do nothing with the problematic StatefulSet, leave it as it is,\n      #   \
+    \ do not try to fix or delete or update it, just abort reconcile cycle.\n    \
+    \  #    Do not proceed to the next StatefulSet(s) and wait for an admin to assist.\n\
+    \      # 2. recreate - proceed and recreate StatefulSet.\n\n      # Triggered\
+    \ when PVC data loss or missing volumes are detected\n      onDataLoss: recreate\n\
+    \      # Triggered when StatefulSet update fails or StatefulSet is not ready\n\
+    \      onUpdateFailure: recreate\n\n  # Reconcile Host scenario\n  host:\n   \
+    \ # The operator during reconcile procedure should wait for a ClickHouse host\
+    \ to achieve the following conditions:\n    wait:\n      # Whether the operator\
+    \ during reconcile procedure should wait for a ClickHouse host:\n      #   - to\
+    \ be excluded from a ClickHouse cluster\n      #   - to complete all running queries\n\
+    \      #   - to be included into a ClickHouse cluster\n      # respectfully before\
+    \ moving forward with host reconcile\n      exclude: true\n      queries: true\n\
+    \      include: false\n      # The operator during reconcile procedure should\
+    \ wait for replicas to catch-up\n      # replication delay a.k.a replication lag\
+    \ for the following replicas\n      replicas:\n        # All replicas (new and\
+    \ known earlier) are explicitly requested to wait for replication to catch-up\n\
+    \        all: no\n        # New replicas only are requested to wait for replication\
+    \ to catch-up\n        new: yes\n        # Replication catch-up is considered\
+    \ to be completed as soon as replication delay\n        # a.k.a replication lag\
+    \ - calculated as \"MAX(absolute_delay) FROM system.replicas\"\n        # is within\
+    \ this specified delay (in seconds)\n        delay: 10\n      probes:\n      \
+    \  # Whether the operator during host launch procedure should wait for startup\
+    \ probe to succeed.\n        # In case probe is unspecified wait is assumed to\
+    \ be completed successfully.\n        # Default option value is to do not wait.\n\
+    \        startup: no\n        # Whether the operator during host launch procedure\
+    \ should wait for readiness probe to succeed.\n        # In case probe is unspecified\
+    \ wait is assumed to be completed successfully.\n        # Default option value\
+    \ is to wait.\n        readiness: yes\n    # The operator during reconcile procedure\
+    \ should drop the following entities:\n    drop:\n      replicas:\n        # Whether\
+    \ the operator during reconcile procedure should drop replicas when replica is\
+    \ deleted\n        onDelete: yes\n        # Whether the operator during reconcile\
+    \ procedure should drop replicas when replica volume is lost\n        onLostVolume:\
+    \ yes\n        # Whether the operator during reconcile procedure should drop active\
+    \ replicas when replica is deleted or recreated\n        active: no\n\n  ################################################\n\
+    \  ##\n  ## Coordination with external systems during reconcile\n  ##\n  ################################################\n\
+    \  coordination:\n    keeper:\n      # How long the operator waits for a referenced\
+    \ ClickHouseKeeper to become ready\n      # before aborting CHI reconcile. In\
+    \ seconds.\n      readyTimeout: 120\n      # Reaction when a referenced CHK resource\
+    \ changes:\n      #   none      \u2014 do nothing (default, backward-compatible)\n\
+    \      #   reconcile \u2014 trigger CHI reconcile\n      # onKeeperResourceUpdate:\
+    \ none\n\n  ################################################\n  ##\n  ## Auto-recovery\
+    \ from aborted reconcile\n  ##\n  ################################################\n\
+    \  recovery:\n    # Recovery scopes keyed by CHI state being recovered from.\n\
+    \    # Each scope contains on<Event>: <action> mappings that apply while the CHI\n\
+    \    # is in that state. Multi-scope design anticipates future states beyond Aborted\n\
+    \    # (e.g. Failed, Broken).\n    from:\n      # Recovery from Status=Aborted\n\
+    \      aborted:\n        # Action when a pod belonging to an Aborted CHI transitions\
+    \ to Ready:\n        #   retry (default) \u2014 re-enqueue the CHI for reconcile\n\
+    \        #   none            \u2014 do nothing, CHI stays Aborted\n        onPodReady:\
+    \ retry\n        # Future events (not yet implemented):\n        #   onKeeperReady:\
+    \ retry       \u2014 retry when a referenced CHK becomes ready\n        #   onOperatorRestart:\
+    \ retry   \u2014 sweep Aborted CHIs on operator startup\n      # Future scopes\
+    \ (not yet implemented):\n      # failed:\n      #   onPodReady: retry\n     \
+    \ # broken:\n      #   onPodReady: retry\n\n    # Future global policy knobs (not\
+    \ yet implemented) \u2014 flat peers of `from`,\n    # apply across all recovery\
+    \ scopes:\n    #\n    # Global kill-switch for auto-recovery:\n    # enabled:\
+    \ true\n    #\n    # Cap on consecutive auto-recovery attempts before giving up:\n\
+    \    # retries: 5\n    #\n    # Minimum time between auto-recovery attempts for\
+    \ the same CHI:\n    # cooldown: 30s\n    #\n    # Exponential backoff for auto-recovery\
+    \ attempts:\n    # backoff:\n    #   duration: 5s\n    #   factor: 2\n    #  \
+    \ maxDuration: 2m\n\n################################################\n##\n##\
+    \ Annotations management section\n##\n################################################\n\
+    annotation:\n  # Applied when:\n  #  1. Propagating annotations from the CHI's\
+    \ `metadata.annotations` to child objects' `metadata.annotations`,\n  #  2. Propagating\
+    \ annotations from the CHI Template's `metadata.annotations` to CHI's `metadata.annotations`,\n\
+    \  # Include annotations from the following list:\n  # Applied only when not empty.\
+    \ Empty list means \"include all, no selection\"\n  include: []\n  # Exclude annotations\
+    \ from the following list:\n  exclude: []\n\n################################################\n\
+    ##\n## Labels management section\n##\n################################################\n\
+    label:\n  # Applied when:\n  #  1. Propagating labels from the CHI's `metadata.labels`\
+    \ to child objects' `metadata.labels`,\n  #  2. Propagating labels from the CHI\
+    \ Template's `metadata.labels` to CHI's `metadata.labels`,\n  # Include labels\
+    \ from the following list:\n  # Applied only when not empty. Empty list means\
+    \ \"include all, no selection\"\n  include: []\n  # Exclude labels from the following\
+    \ list:\n  # Applied only when not empty. Empty list means \"nothing to exclude,\
+    \ no selection\"\n  exclude: []\n  # Whether to append *Scope* labels to StatefulSet\
+    \ and Pod.\n  # Full list of available *scope* labels check in 'labeler.go'\n\
+    \  #  LabelShardScopeIndex\n  #  LabelReplicaScopeIndex\n  #  LabelCHIScopeIndex\n\
+    \  #  LabelCHIScopeCycleSize\n  #  LabelCHIScopeCycleIndex\n  #  LabelCHIScopeCycleOffset\n\
+    \  #  LabelClusterScopeIndex\n  #  LabelClusterScopeCycleSize\n  #  LabelClusterScopeCycleIndex\n\
+    \  #  LabelClusterScopeCycleOffset\n  appendScope: \"no\"\n\n################################################\n\
+    ##\n## Metrics management section\n##\n################################################\n\
+    metrics:\n  labels:\n    exclude: []\n\n################################################\n\
+    ##\n## Status management section\n##\n################################################\n\
+    status:\n  fields:\n    action: false\n    actions: false\n    error: true\n \
+    \   errors: true\n\n################################################\n##\n## StatefulSet\
+    \ management section\n##\n################################################\nstatefulSet:\n\
+    \  revisionHistoryLimit: 0\n\n################################################\n\
+    ##\n## Pod management section\n##\n################################################\n\
+    pod:\n  # Grace period for Pod termination.\n  # How many seconds to wait between\
+    \ sending\n  # SIGTERM and SIGKILL during Pod termination process.\n  # Increase\
+    \ this number is case of slow shutdown.\n  terminationGracePeriod: 30\n\n################################################\n\
+    ##\n## Log parameters section\n##\n################################################\n\
+    logger:\n  logtostderr: \"true\"\n  alsologtostderr: \"false\"\n  v: \"1\"\n \
+    \ stderrthreshold: \"\"\n  vmodule: \"\"\n  log_backtrace_at: \"\"\n"
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-clickhouse-operator-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data: null
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-clickhouse-operator-confd-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data:
+  01-clickhouse-01-listen.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<yandex>\n    <!-- Listen wildcard address to allow\
+    \ accepting connections from other containers and host network. -->\n    <listen_host>::</listen_host>\n\
+    \    <listen_host>0.0.0.0</listen_host>\n    <listen_try>1</listen_try>\n</yandex>\n"
+  01-clickhouse-02-logger.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<yandex>\n    <logger>\n        <!-- Possible levels:\
+    \ https://github.com/pocoproject/poco/blob/devel/Foundation/include/Poco/Logger.h#L439\
+    \ -->\n        <level>debug</level>\n        <log>/var/log/clickhouse-server/clickhouse-server.log</log>\n\
+    \        <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>\n\
+    \        <size>1000M</size>\n        <count>10</count>\n        <!-- Default behavior\
+    \ is autodetection (log to console if not daemon mode and is tty) -->\n      \
+    \  <console>1</console>\n    </logger>\n</yandex>\n"
+  01-clickhouse-03-query_log.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<yandex>\n    <query_log replace=\"1\">\n        <database>system</database>\n\
+    \        <table>query_log</table>\n        <engine>Engine = MergeTree PARTITION\
+    \ BY event_date ORDER BY event_time TTL event_date + interval 30 day</engine>\n\
+    \        <flush_interval_milliseconds>7500</flush_interval_milliseconds>\n   \
+    \ </query_log>\n    <query_thread_log remove=\"1\"/>\n</yandex>\n"
+  01-clickhouse-04-part_log.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<yandex>\n    <part_log replace=\"1\">\n        <database>system</database>\n\
+    \        <table>part_log</table>\n        <engine>Engine = MergeTree PARTITION\
+    \ BY event_date ORDER BY event_time TTL event_date + interval 30 day</engine>\n\
+    \        <flush_interval_milliseconds>7500</flush_interval_milliseconds>\n   \
+    \ </part_log>\n</yandex>\n"
+  01-clickhouse-05-trace_log.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<yandex>\n    <trace_log replace=\"1\">\n        <database>system</database>\n\
+    \        <table>trace_log</table>\n        <engine>Engine = MergeTree PARTITION\
+    \ BY event_date ORDER BY event_time TTL event_date + interval 30 day</engine>\n\
+    \        <flush_interval_milliseconds>7500</flush_interval_milliseconds>\n   \
+    \ </trace_log>\n</yandex>\n"
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-clickhouse-operator-configd-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data:
+  001-templates.json.example: "{\n  \"apiVersion\": \"clickhouse.altinity.com/v1\"\
+    ,\n  \"kind\": \"ClickHouseInstallationTemplate\",\n  \"metadata\": {\n    \"\
+    name\": \"01-default-volumeclaimtemplate\"\n  },\n  \"spec\": {\n    \"templates\"\
+    : {\n      \"volumeClaimTemplates\": [\n        {\n          \"name\": \"chi-default-volume-claim-template\"\
+    ,\n          \"spec\": {\n            \"accessModes\": [\n              \"ReadWriteOnce\"\
+    \n            ],\n            \"resources\": {\n              \"requests\": {\n\
+    \                \"storage\": \"2Gi\"\n              }\n            }\n      \
+    \    }\n        }\n      ],\n      \"podTemplates\": [\n        {\n          \"\
+    name\": \"chi-default-oneperhost-pod-template\",\n          \"distribution\":\
+    \ \"OnePerHost\",\n          \"spec\": {\n            \"containers\" : [\n   \
+    \           {\n                \"name\": \"clickhouse\",\n                \"image\"\
+    : \"clickhouse/clickhouse-server:23.8\",\n                \"ports\": [\n     \
+    \             {\n                    \"name\": \"http\",\n                   \
+    \ \"containerPort\": 8123\n                  },\n                  {\n       \
+    \             \"name\": \"client\",\n                    \"containerPort\": 9000\n\
+    \                  },\n                  {\n                    \"name\": \"interserver\"\
+    ,\n                    \"containerPort\": 9009\n                  }\n        \
+    \        ]\n              }\n            ]\n          }\n        }\n      ]\n\
+    \    }\n  }\n}\n"
+  default-pod-template.yaml.example: "apiVersion: \"clickhouse.altinity.com/v1\"\n\
+    kind: \"ClickHouseInstallationTemplate\"\nmetadata:\n  name: \"default-oneperhost-pod-template\"\
+    \nspec:\n  templates:\n    podTemplates:\n      - name: default-oneperhost-pod-template\n\
+    \        distribution: \"OnePerHost\"\n"
+  default-storage-template.yaml.example: "apiVersion: \"clickhouse.altinity.com/v1\"\
+    \nkind: \"ClickHouseInstallationTemplate\"\nmetadata:\n  name: \"default-storage-template-2Gi\"\
+    \nspec:\n  templates:\n    volumeClaimTemplates:\n      - name: default-storage-template-2Gi\n\
+    \        spec:\n          accessModes:\n            - ReadWriteOnce\n        \
+    \  resources:\n            requests:\n              storage: 2Gi\n"
+  readme: 'Templates in this folder are packaged with an operator and available via
+    ''useTemplate''
+
+    '
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-clickhouse-operator-templatesd-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data:
+  01-clickhouse-operator-profile.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<!--\n#\n# Template parameters available:\n#\n-->\n\
+    <yandex>\n    <!-- clickhouse-operator user is generated by the operator based\
+    \ on config.yaml in runtime -->\n    <profiles>\n        <clickhouse_operator>\n\
+    \            <log_queries>0</log_queries>\n            <skip_unavailable_shards>1</skip_unavailable_shards>\n\
+    \            <http_connection_timeout>10</http_connection_timeout>\n         \
+    \   <max_concurrent_queries_for_all_users>0</max_concurrent_queries_for_all_users>\n\
+    \            <os_thread_priority>0</os_thread_priority>\n        </clickhouse_operator>\n\
+    \    </profiles>\n</yandex>\n"
+  02-clickhouse-default-profile.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<yandex>\n  <profiles>\n    <default>\n      <os_thread_priority>2</os_thread_priority>\n\
+    \      <log_queries>1</log_queries>\n      <connect_timeout_with_failover_ms>1000</connect_timeout_with_failover_ms>\n\
+    \      <distributed_aggregation_memory_efficient>1</distributed_aggregation_memory_efficient>\n\
+    \      <parallel_view_processing>1</parallel_view_processing>\n      <do_not_merge_across_partitions_select_final>1</do_not_merge_across_partitions_select_final>\n\
+    \      <load_balancing>nearest_hostname</load_balancing>\n      <prefer_localhost_replica>0</prefer_localhost_replica>\n\
+    \      <!-- materialize_ttl_recalculate_only>1</materialize_ttl_recalculate_only>\
+    \ 21.10 and above -->\n    </default>\n  </profiles>\n</yandex>\n"
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-clickhouse-operator-usersd-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data: null
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-keeper-operator-confd-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data:
+  01-keeper-01-default-config.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<clickhouse>\n    <asynchronous_metrics_keeper_metrics_only>1</asynchronous_metrics_keeper_metrics_only>\n\
+    \    <keeper_server>\n        <coordination_settings>\n            <async_replication>1</async_replication>\n\
+    \            <min_session_timeout_ms>10000</min_session_timeout_ms>\n        \
+    \    <operation_timeout_ms>10000</operation_timeout_ms>\n            <raft_logs_level>information</raft_logs_level>\n\
+    \            <session_timeout_ms>100000</session_timeout_ms>\n            <use_xid_64>1</use_xid_64>\n\
+    \        </coordination_settings>\n        <hostname_checks_enabled>true</hostname_checks_enabled>\n\
+    \        <log_storage_path>/var/lib/clickhouse-keeper/coordination/logs</log_storage_path>\n\
+    \        <snapshot_storage_path>/var/lib/clickhouse-keeper/coordination/snapshots</snapshot_storage_path>\n\
+    \        <storage_path>/var/lib/clickhouse-keeper</storage_path>\n        <tcp_port>2181</tcp_port>\n\
+    \        <!--\n            Four-letter-word command allowlist.\n\n           \
+    \ Set explicitly to the upstream-default list so the operator-rendered\n     \
+    \       liveness probe (which sends `ruok` over TCP and expects `imok`) keeps\n\
+    \            working even if a user adds their own keeper_server settings.\n\n\
+    \            Without this, a user override that restricts the allowlist\n    \
+    \        (e.g. `four_letter_word_white_list: \"mntr,stat\"` for security)\n  \
+    \          would silently disable `ruok` \u2192 liveness probe always fails \u2192\
+    \ CrashLoopBackOff.\n\n            The list mirrors ClickHouse Keeper's compiled-in\
+    \ default; users who want a\n            stricter list can override this value,\
+    \ but they must keep `ruok` if they\n            also use the default operator\
+    \ probes.\n        -->\n        <four_letter_word_white_list>conf,cons,crst,envi,ruok,srst,srvr,stat,wchs,dirs,mntr,isro</four_letter_word_white_list>\n\
+    \    </keeper_server>\n    <listen_host>::</listen_host>\n    <listen_host>0.0.0.0</listen_host>\n\
+    \    <listen_try>1</listen_try>\n    <logger>\n        <console>1</console>\n\
+    \        <level>information</level>\n    </logger>\n    <max_connections>4096</max_connections>\n\
+    </clickhouse>\n"
+  01-keeper-02-readiness.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<clickhouse>\n    <keeper_server>\n        <http_control>\n\
+    \            <port>9182</port>\n            <readiness>\n                <endpoint>/ready</endpoint>\n\
+    \            </readiness>\n        </http_control>\n    </keeper_server>\n</clickhouse>\n"
+  01-keeper-03-enable-reconfig.xml: "<!-- IMPORTANT -->\n<!-- This file is auto-generated\
+    \ -->\n<!-- Do not edit this file - all changes would be lost -->\n<!-- Edit appropriate\
+    \ template in the following folder: -->\n<!-- deploy/builder/templates-config\
+    \ -->\n<!-- IMPORTANT -->\n<clickhouse>\n    <keeper_server>\n        <enable_reconfiguration>false</enable_reconfiguration>\n\
+    \    </keeper_server>\n</clickhouse>\n"
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-keeper-operator-configd-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data:
+  readme: 'Templates in this folder are packaged with an operator and available via
+    ''useTemplate''
+
+    '
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-keeper-operator-templatesd-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+data: null
+kind: ConfigMap
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: etc-keeper-operator-usersd-files
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: clickhouse-operator
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+stringData:
+  password: clickhouse_operator_password
+  username: clickhouse_operator
+type: Opaque
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: clickhouse-operator
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse-operator
+  template:
+    metadata:
+      annotations:
+        clickhouse-operator-metrics/port: '9999'
+        clickhouse-operator-metrics/scrape: 'true'
+        prometheus.io/port: '8888'
+        prometheus.io/scrape: 'true'
+      labels:
+        app: clickhouse-operator
+    spec:
+      containers:
+      - env:
+        - name: OPERATOR_POD_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: OPERATOR_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: OPERATOR_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: OPERATOR_POD_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: OPERATOR_CONTAINER_CPU_REQUEST
+          valueFrom:
+            resourceFieldRef:
+              containerName: clickhouse-operator
+              resource: requests.cpu
+        - name: OPERATOR_CONTAINER_CPU_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: clickhouse-operator
+              resource: limits.cpu
+        - name: OPERATOR_CONTAINER_MEM_REQUEST
+          valueFrom:
+            resourceFieldRef:
+              containerName: clickhouse-operator
+              resource: requests.memory
+        - name: OPERATOR_CONTAINER_MEM_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: clickhouse-operator
+              resource: limits.memory
+        image: {{ .Values.clickhouseOperator.image.repository }}:{{ .Values.clickhouseOperator.image.tag }}
+        imagePullPolicy: IfNotPresent
+        name: clickhouse-operator
+        ports:
+        - containerPort: 9999
+          name: op-metrics
+        volumeMounts:
+        - mountPath: /etc/clickhouse-operator
+          name: etc-clickhouse-operator-folder
+        - mountPath: /etc/clickhouse-operator/chi/conf.d
+          name: etc-clickhouse-operator-confd-folder
+        - mountPath: /etc/clickhouse-operator/chi/config.d
+          name: etc-clickhouse-operator-configd-folder
+        - mountPath: /etc/clickhouse-operator/chi/templates.d
+          name: etc-clickhouse-operator-templatesd-folder
+        - mountPath: /etc/clickhouse-operator/chi/users.d
+          name: etc-clickhouse-operator-usersd-folder
+        - mountPath: /etc/clickhouse-operator/chk/conf.d
+          name: etc-keeper-operator-confd-folder
+        - mountPath: /etc/clickhouse-operator/chk/keeper_config.d
+          name: etc-keeper-operator-configd-folder
+        - mountPath: /etc/clickhouse-operator/chk/templates.d
+          name: etc-keeper-operator-templatesd-folder
+        - mountPath: /etc/clickhouse-operator/chk/users.d
+          name: etc-keeper-operator-usersd-folder
+      - env:
+        - name: OPERATOR_POD_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: OPERATOR_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: OPERATOR_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: OPERATOR_POD_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: OPERATOR_CONTAINER_CPU_REQUEST
+          valueFrom:
+            resourceFieldRef:
+              containerName: clickhouse-operator
+              resource: requests.cpu
+        - name: OPERATOR_CONTAINER_CPU_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: clickhouse-operator
+              resource: limits.cpu
+        - name: OPERATOR_CONTAINER_MEM_REQUEST
+          valueFrom:
+            resourceFieldRef:
+              containerName: clickhouse-operator
+              resource: requests.memory
+        - name: OPERATOR_CONTAINER_MEM_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: clickhouse-operator
+              resource: limits.memory
+        image: {{ .Values.clickhouseOperator.metricsExporter.image.repository }}:{{ .Values.clickhouseOperator.metricsExporter.image.tag }}
+        imagePullPolicy: IfNotPresent
+        name: metrics-exporter
+        ports:
+        - containerPort: 8888
+          name: ch-metrics
+        volumeMounts:
+        - mountPath: /etc/clickhouse-operator
+          name: etc-clickhouse-operator-folder
+        - mountPath: /etc/clickhouse-operator/chi/conf.d
+          name: etc-clickhouse-operator-confd-folder
+        - mountPath: /etc/clickhouse-operator/chi/config.d
+          name: etc-clickhouse-operator-configd-folder
+        - mountPath: /etc/clickhouse-operator/chi/templates.d
+          name: etc-clickhouse-operator-templatesd-folder
+        - mountPath: /etc/clickhouse-operator/chi/users.d
+          name: etc-clickhouse-operator-usersd-folder
+        - mountPath: /etc/clickhouse-operator/chk/conf.d
+          name: etc-keeper-operator-confd-folder
+        - mountPath: /etc/clickhouse-operator/chk/keeper_config.d
+          name: etc-keeper-operator-configd-folder
+        - mountPath: /etc/clickhouse-operator/chk/templates.d
+          name: etc-keeper-operator-templatesd-folder
+        - mountPath: /etc/clickhouse-operator/chk/users.d
+          name: etc-keeper-operator-usersd-folder
+      serviceAccountName: clickhouse-operator
+      volumes:
+      - configMap:
+          name: etc-clickhouse-operator-files
+        name: etc-clickhouse-operator-folder
+      - configMap:
+          name: etc-clickhouse-operator-confd-files
+        name: etc-clickhouse-operator-confd-folder
+      - configMap:
+          name: etc-clickhouse-operator-configd-files
+        name: etc-clickhouse-operator-configd-folder
+      - configMap:
+          name: etc-clickhouse-operator-templatesd-files
+        name: etc-clickhouse-operator-templatesd-folder
+      - configMap:
+          name: etc-clickhouse-operator-usersd-files
+        name: etc-clickhouse-operator-usersd-folder
+      - configMap:
+          name: etc-keeper-operator-confd-files
+        name: etc-keeper-operator-confd-folder
+      - configMap:
+          name: etc-keeper-operator-configd-files
+        name: etc-keeper-operator-configd-folder
+      - configMap:
+          name: etc-keeper-operator-templatesd-files
+        name: etc-keeper-operator-templatesd-folder
+      - configMap:
+          name: etc-keeper-operator-usersd-files
+        name: etc-keeper-operator-usersd-folder
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: clickhouse-operator
+    clickhouse.altinity.com/chop: 0.27.0
+  name: clickhouse-operator-metrics
+  namespace: {{ .Values.clickhouseOperator.namespace }}
+spec:
+  ports:
+  - name: ch-metrics
+    port: 8888
+  - name: op-metrics
+    port: 9999
+  selector:
+    app: clickhouse-operator

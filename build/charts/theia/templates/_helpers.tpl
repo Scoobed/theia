@@ -92,6 +92,7 @@
 - name: clickhouse-configmap-volume
   configMap:
     name: clickhouse-mounted-configmap
+    defaultMode: {{ default 511 $clickhouse.configMapDefaultMode }}
     items:
       {{- range $path, $_ :=  $Files.Glob  "provisioning/datasources/*.sh" }}
       - key: {{ regexReplaceAll "(.*)/" $path "" }}
