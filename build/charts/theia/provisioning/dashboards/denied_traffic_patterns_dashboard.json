@@ -1,0 +1,200 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": { "limit": 100, "matchAny": false, "tags": [], "type": "dashboard" },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "uid": "denied-patterns-v1",
+  "title": "denied_traffic_patterns_dashboard",
+  "version": 1,
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "egress", "value": "egress" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Direction",
+        "multi": false,
+        "name": "direction",
+        "options": [
+          { "selected": false, "text": "both", "value": "both" },
+          { "selected": false, "text": "ingress", "value": "ingress" },
+          { "selected": true, "text": "egress", "value": "egress" }
+        ],
+        "query": "both,ingress,egress",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+        "filters": [],
+        "hide": 0,
+        "name": "Filter",
+        "skipUrlSync": false,
+        "type": "adhoc"
+      },
+      {
+        "hide": 2,
+        "name": "clickhouse_adhoc_query",
+        "query": "default.flows_policy_view",
+        "skipUrlSync": false,
+        "type": "constant"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "13.0.2",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT count() as denied_connections\nFROM flows_policy_view\nWHERE $__timeFilter(flowEndSeconds)\nAND (\n  ('${direction}' = 'egress' AND egressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'ingress' AND ingressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'both' AND (egressNetworkPolicyRuleAction IN (2,3) OR ingressNetworkPolicyRuleAction IN (2,3)))\n)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Denied Connections",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "pluginVersion": "13.0.2",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT SUM(octetDeltaCount) as denied_bytes\nFROM flows_policy_view\nWHERE $__timeFilter(flowEndSeconds)\nAND (\n  ('${direction}' = 'egress' AND egressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'ingress' AND ingressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'both' AND (egressNetworkPolicyRuleAction IN (2,3) OR ingressNetworkPolicyRuleAction IN (2,3)))\n)",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Denied Bytes",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "axisLabel": "", "drawStyle": "bars", "fillOpacity": 80, "lineWidth": 1, "pointSize": 5, "stacking": { "group": "A", "mode": "normal" } } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 3,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "pluginVersion": "13.0.2",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT $__timeInterval(flowEndSeconds) as time,\ncount() as denied_count\nFROM flows_policy_view\nWHERE $__timeFilter(time)\nAND (\n  ('${direction}' = 'egress' AND egressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'ingress' AND ingressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'both' AND (egressNetworkPolicyRuleAction IN (2,3) OR ingressNetworkPolicyRuleAction IN (2,3)))\n)\nGROUP BY time\nORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "Denied Traffic Trend",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-reds" } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 5 },
+      "id": 4,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true }, "textMode": "value_and_name" },
+      "pluginVersion": "13.0.2",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT sourcePodNamespace as namespace,\ncount() as denied_count\nFROM flows_policy_view\nWHERE $__timeFilter(flowEndSeconds)\nAND (\n  ('${direction}' = 'egress' AND egressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'ingress' AND ingressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'both' AND (egressNetworkPolicyRuleAction IN (2,3) OR ingressNetworkPolicyRuleAction IN (2,3)))\n)\nGROUP BY namespace\nORDER BY denied_count DESC\nLIMIT 20",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Source Namespaces (Denied)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-reds" } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 13 },
+      "id": 5,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true }, "textMode": "value_and_name" },
+      "pluginVersion": "13.0.2",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT destinationIP as dest_ip,\ncount() as denied_count\nFROM flows_policy_view\nWHERE $__timeFilter(flowEndSeconds)\nAND (\n  ('${direction}' = 'egress' AND egressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'ingress' AND ingressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'both' AND (egressNetworkPolicyRuleAction IN (2,3) OR ingressNetworkPolicyRuleAction IN (2,3)))\n)\nGROUP BY dest_ip\nORDER BY denied_count DESC\nLIMIT 20",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Destination IPs (Denied)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-reds" } }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 13 },
+      "id": 6,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true }, "textMode": "value_and_name" },
+      "pluginVersion": "13.0.2",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT CAST(destinationTransportPort AS VARCHAR) as dest_port,\ncount() as denied_count\nFROM flows_policy_view\nWHERE $__timeFilter(flowEndSeconds)\nAND (\n  ('${direction}' = 'egress' AND egressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'ingress' AND ingressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'both' AND (egressNetworkPolicyRuleAction IN (2,3) OR ingressNetworkPolicyRuleAction IN (2,3)))\n)\nGROUP BY dest_port\nORDER BY denied_count DESC\nLIMIT 20",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Destination Ports (Denied)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto", "displayMode": "auto", "filterable": true }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }, "overrides": [] },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 21 },
+      "id": 7,
+      "options": { "footer": { "fields": "", "reducer": ["sum"], "show": false }, "showHeader": true, "sortBy": [{ "desc": true, "displayName": "denied_count" }] },
+      "pluginVersion": "13.0.2",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "PDEE91DDB90597936" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT sourcePodNamespace,\ndestinationIP,\nCAST(destinationTransportPort AS VARCHAR) as destinationPort,\ndestinationServicePortName,\ncount() as denied_count,\nSUM(octetDeltaCount) as denied_bytes\nFROM flows_policy_view\nWHERE $__timeFilter(flowEndSeconds)\nAND (\n  ('${direction}' = 'egress' AND egressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'ingress' AND ingressNetworkPolicyRuleAction IN (2,3))\n  OR ('${direction}' = 'both' AND (egressNetworkPolicyRuleAction IN (2,3) OR ingressNetworkPolicyRuleAction IN (2,3)))\n)\nGROUP BY sourcePodNamespace, destinationIP, destinationPort, destinationServicePortName\nORDER BY denied_count DESC\nLIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Namespace → Destination Drilldown (Denied)",
+      "type": "table"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 34,
+  "style": "dark",
+  "tags": ["deny", "security"],
+  "liveNow": false
+}

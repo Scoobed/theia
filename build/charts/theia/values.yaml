@@ -271,6 +271,9 @@ grafana:
     - all_ns_node_to_node_dashboard.json
     - all_ns_networkpolicy_dashboard.json
     - all_ns_network_topology_dashboard.json
+    # Denied traffic analysis dashboards
+    - denied_traffic_patterns_dashboard.json
+    - denied_policy_accountability_dashboard.json
   # -- Default home dashboard.
   homeDashboard: homepage.json
   storage:
