@@ -239,7 +239,7 @@ grafana:
   image: 
     repository: "ghcr.io/scoobed/theia-grafana"
     pullPolicy: "IfNotPresent"
-    tag: "v0.9.0"
+    tag: "v0.9.1"
   # -- Credentials to login to Grafana. They will be stored in a Secret.
   loginSecret:
     username: "admin"

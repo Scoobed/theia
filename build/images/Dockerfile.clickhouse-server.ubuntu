@@ -10,8 +10,9 @@ RUN GOFLAGS=-mod=vendor make clickhouse-schema-management-plugin
 RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin && \
     syft /theia/bin/clickhouse-schema-management -o spdx-json=/theia/sbom.spdx.json
 
-# Use ClickHouse's official distroless variant - minimal attack surface
-FROM docker.io/clickhouse/clickhouse-server:25.8.28.1-distroless
+# NOTE: Uses the standard (non-distroless) image because the ClickHouse operator
+# injects shell commands (/bin/sh) during startup that require a shell.
+FROM docker.io/clickhouse/clickhouse-server:25.8.28.1
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
 LABEL description="A docker image to deploy the ClickHouse server."
