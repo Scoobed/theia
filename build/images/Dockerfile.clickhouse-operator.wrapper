@@ -1,16 +1,27 @@
-# Wrapper image: adds SBOM and LICENSE to the upstream clickhouse-operator image.
-# Build with: docker build --build-arg UPSTREAM_TAG=<tag> -t theia-clickhouse-operator:<tag> -f this .
+# Wrapper: adds /sbom.spdx.json and /LICENSE to altinity/clickhouse-operator.
+# Multi-stage build so the upstream image needs no shell or curl.
 ARG UPSTREAM_TAG=latest
+
+# Stage 1: reference upstream filesystem
+FROM docker.io/altinity/clickhouse-operator:${UPSTREAM_TAG} AS upstream
+
+# Stage 2: generate SBOM in an alpine helper
+FROM alpine:latest AS sbom-generator
+RUN apk add --no-cache curl
+COPY --from=upstream / /upstream/
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | \
+    sh -s -- -b /usr/local/bin && \
+    cd /upstream && syft . \
+      --exclude './proc' \
+      --exclude './sys' \
+      --exclude './dev' \
+      -o spdx-json=/sbom.spdx.json
+
+# Stage 3: final image = upstream + SBOM + LICENSE
 FROM docker.io/altinity/clickhouse-operator:${UPSTREAM_TAG}
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
-LABEL description="theia-clickhouse-operator: altinity/clickhouse-operator repackaged with SBOM and LICENSE."
+LABEL description="theia-clickhouse-operator: altinity/clickhouse-operator with SBOM and LICENSE."
 
-USER root
-
-# Generate SPDX SBOM for the installed binaries
-RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin && \
-    syft / --exclude '/proc' --exclude '/sys' -o spdx-json=/sbom.spdx.json && \
-    rm /usr/local/bin/syft
-
+COPY --from=sbom-generator /sbom.spdx.json /sbom.spdx.json
 COPY LICENSE /LICENSE

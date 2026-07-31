@@ -1,15 +1,23 @@
-# Wrapper image: adds SBOM and LICENSE to the upstream metrics-exporter image.
+# Wrapper: adds /sbom.spdx.json and /LICENSE to altinity/metrics-exporter.
 ARG UPSTREAM_TAG=latest
+
+FROM docker.io/altinity/metrics-exporter:${UPSTREAM_TAG} AS upstream
+
+FROM alpine:latest AS sbom-generator
+RUN apk add --no-cache curl
+COPY --from=upstream / /upstream/
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | \
+    sh -s -- -b /usr/local/bin && \
+    cd /upstream && syft . \
+      --exclude './proc' \
+      --exclude './sys' \
+      --exclude './dev' \
+      -o spdx-json=/sbom.spdx.json
+
 FROM docker.io/altinity/metrics-exporter:${UPSTREAM_TAG}
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
-LABEL description="theia-metrics-exporter: altinity/metrics-exporter repackaged with SBOM and LICENSE."
+LABEL description="theia-metrics-exporter: altinity/metrics-exporter with SBOM and LICENSE."
 
-USER root
-
-# Generate SPDX SBOM for the installed binaries
-RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin && \
-    syft / --exclude '/proc' --exclude '/sys' -o spdx-json=/sbom.spdx.json && \
-    rm /usr/local/bin/syft
-
+COPY --from=sbom-generator /sbom.spdx.json /sbom.spdx.json
 COPY LICENSE /LICENSE
