@@ -8,11 +8,10 @@ USER root
 
 RUN apt-get --allow-releaseinfo-change update && \
     apt-get install -y --no-install-recommends wget ca-certificates && \
-    wget https://github.com/ClickHouse/clickhouse-jdbc/releases/download/v0.3.1/clickhouse-jdbc-0.3.1.jar -P /opt/spark/jars/
-    
-RUN rm -rf /var/cache/apt/* /var/lib/apt/lists/* && \
-    rm -rf /tmp/* && \
-    apt-get clean
+    wget https://github.com/ClickHouse/clickhouse-jdbc/releases/download/v0.3.1/clickhouse-jdbc-0.3.1.jar -P /opt/spark/jars/ && \
+    apt-get remove -y wget && \
+    apt-get autoremove -y && \
+    rm -rf /var/cache/apt/* /var/lib/apt/lists/* /tmp/*
 
 COPY plugins/policy-recommendation/policy_recommendation_job.py /opt/spark/work-dir/policy_recommendation_job.py
 COPY plugins/policy-recommendation/policy_recommendation_utils.py /opt/spark/work-dir/policy_recommendation_utils.py
@@ -23,3 +22,10 @@ COPY plugins/anomaly-detection/requirements.txt /opt/spark/work-dir/anomaly_dete
 RUN pip3 install --upgrade pip --no-cache-dir && \
     pip3 install kubernetes --no-cache-dir && \
     pip3 install -r /opt/spark/work-dir/anomaly_detection_requirements.txt --no-cache-dir
+
+# Generate SPDX SBOM for installed Python packages
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin && \
+    syft /opt/spark/work-dir -o spdx-json=/opt/spark/work-dir/sbom.spdx.json && \
+    rm /usr/local/bin/syft
+
+COPY LICENSE /LICENSE

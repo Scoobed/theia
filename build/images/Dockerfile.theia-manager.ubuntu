@@ -4,23 +4,23 @@ FROM golang:${GO_VERSION} AS theia-manager-build
 COPY . /theia
 WORKDIR /theia
 
-RUN GOFLAGS=-mod=vendor make theia-manager-bin
+RUN CGO_ENABLED=0 GOFLAGS=-mod=vendor make theia-manager-bin
 RUN mkdir theia-manager-coverage
 
-# Chose this base image so that a shell is available for users to exec into the container
-FROM ubuntu:26.04
+# Generate SPDX SBOM for the binary
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin && \
+    syft /theia/bin/theia-manager -o spdx-json=/theia/sbom.spdx.json
 
-# Update Canonical Pebble to v1.31.0 for security fixes
-RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && \
-    wget -q https://github.com/canonical/pebble/releases/download/v1.31.0/pebble_v1.31.0_linux_amd64.tar.gz && \
-    tar xzf pebble_v1.31.0_linux_amd64.tar.gz && \
-    mv pebble /usr/bin/pebble && \
-    rm -f pebble_v1.31.0_linux_amd64.tar.gz && \
-    apt-get purge -y wget && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+# Minimal scratch image - zero CVEs, no OS packages
+FROM scratch
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
 LABEL description="A docker image to deploy theia manager."
 
-COPY --from=theia-manager-build /theia/bin/theia-manager /
+# CA certs required for TLS connections to Kubernetes API
+COPY --from=theia-manager-build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=theia-manager-build /theia/bin/theia-manager /theia-manager
+COPY --from=theia-manager-build /theia/sbom.spdx.json /sbom.spdx.json
+COPY LICENSE /LICENSE
 
 ENTRYPOINT ["/theia-manager"]
