@@ -14,6 +14,12 @@ COPY plugins/grafana-custom-plugins/grafana-dependency-plugin/dist/ /opt/grafana
 # Fix ownership
 RUN chown -R grafana:root /opt/grafana/plugins/
 
+# Generate SPDX SBOM and embed LICENSE
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin && \
+    syft /opt/grafana -o spdx-json=/sbom.spdx.json && \
+    rm /usr/local/bin/syft
+COPY LICENSE /LICENSE
+
 # Point Grafana to the custom plugins path and allow unsigned plugins
 ENV GF_PATHS_PLUGINS=/opt/grafana/plugins
 ENV GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=theia-grafana-sankey-plugin,theia-grafana-chord-plugin,theia-grafana-dependency-plugin

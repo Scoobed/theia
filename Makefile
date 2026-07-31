@@ -247,39 +247,48 @@ docker-images: clickhouse-monitor clickhouse-server theia-manager spark-jobs the
 # Mirrors the docker_update_theia.yml workflow.
 DOCKER_REGISTRY ?= ghcr.io/scoobed
 
+# Each pull-and-retag target now builds a thin wrapper image that adds
+# /sbom.spdx.json (syft SPDX) and /LICENSE to the upstream image instead
+# of doing a bare docker pull + docker tag.
+
 .PHONY: pull-theia-clickhouse-operator
 pull-theia-clickhouse-operator: check-CH_OPERATOR_TAG
-	@echo "===> Pulling and retagging clickhouse-operator as theia-clickhouse-operator <==="
-	docker pull docker.io/altinity/clickhouse-operator:$(CH_OPERATOR_TAG)
-	docker tag docker.io/altinity/clickhouse-operator:$(CH_OPERATOR_TAG) $(DOCKER_REGISTRY)/theia-clickhouse-operator:$(CH_OPERATOR_TAG)
+	@echo "===> Building theia-clickhouse-operator (+ SBOM/LICENSE) from altinity/clickhouse-operator:$(CH_OPERATOR_TAG) <==="
+	docker build --pull --build-arg UPSTREAM_TAG=$(CH_OPERATOR_TAG) \
+		-t $(DOCKER_REGISTRY)/theia-clickhouse-operator:$(CH_OPERATOR_TAG) \
+		-f build/images/Dockerfile.clickhouse-operator.wrapper .
 	docker push $(DOCKER_REGISTRY)/theia-clickhouse-operator:$(CH_OPERATOR_TAG)
 
 .PHONY: pull-theia-metrics-exporter
 pull-theia-metrics-exporter: check-CH_OPERATOR_TAG
-	@echo "===> Pulling and retagging metrics-exporter as theia-metrics-exporter <==="
-	docker pull docker.io/altinity/metrics-exporter:$(CH_OPERATOR_TAG)
-	docker tag docker.io/altinity/metrics-exporter:$(CH_OPERATOR_TAG) $(DOCKER_REGISTRY)/theia-metrics-exporter:$(CH_OPERATOR_TAG)
+	@echo "===> Building theia-metrics-exporter (+ SBOM/LICENSE) from altinity/metrics-exporter:$(CH_OPERATOR_TAG) <==="
+	docker build --pull --build-arg UPSTREAM_TAG=$(CH_OPERATOR_TAG) \
+		-t $(DOCKER_REGISTRY)/theia-metrics-exporter:$(CH_OPERATOR_TAG) \
+		-f build/images/Dockerfile.metrics-exporter.wrapper .
 	docker push $(DOCKER_REGISTRY)/theia-metrics-exporter:$(CH_OPERATOR_TAG)
 
 .PHONY: pull-theia-clickhouse-server-upstream
 pull-theia-clickhouse-server-upstream: check-CH_SERVER_TAG
-	@echo "===> Pulling and retagging upstream clickhouse-server as theia-clickhouse-server-upstream <==="
-	docker pull docker.io/clickhouse/clickhouse-server:$(CH_SERVER_TAG)
-	docker tag docker.io/clickhouse/clickhouse-server:$(CH_SERVER_TAG) $(DOCKER_REGISTRY)/theia-clickhouse-server-upstream:$(CH_SERVER_TAG)
+	@echo "===> Building theia-clickhouse-server-upstream (+ SBOM/LICENSE) from clickhouse-server:$(CH_SERVER_TAG) <==="
+	docker build --pull --build-arg UPSTREAM_TAG=$(CH_SERVER_TAG) \
+		-t $(DOCKER_REGISTRY)/theia-clickhouse-server-upstream:$(CH_SERVER_TAG) \
+		-f build/images/Dockerfile.clickhouse-server-upstream.wrapper .
 	docker push $(DOCKER_REGISTRY)/theia-clickhouse-server-upstream:$(CH_SERVER_TAG)
 
 .PHONY: pull-theia-grafana
 pull-theia-grafana: check-GRAFANA_TAG
-	@echo "===> Pulling and retagging grafana as theia-grafana <==="
-	docker pull docker.io/grafana/grafana:$(GRAFANA_TAG)
-	docker tag docker.io/grafana/grafana:$(GRAFANA_TAG) $(DOCKER_REGISTRY)/theia-grafana:$(GRAFANA_TAG)
+	@echo "===> Building theia-grafana (+ SBOM/LICENSE) from grafana/grafana:$(GRAFANA_TAG) <==="
+	docker build --pull --build-arg UPSTREAM_TAG=$(GRAFANA_TAG) \
+		-t $(DOCKER_REGISTRY)/theia-grafana:$(GRAFANA_TAG) \
+		-f build/images/Dockerfile.grafana .
 	docker push $(DOCKER_REGISTRY)/theia-grafana:$(GRAFANA_TAG)
 
 .PHONY: pull-theia-zookeeper
 pull-theia-zookeeper: check-ZOOKEEPER_TAG
-	@echo "===> Pulling and retagging zookeeper as theia-zookeeper <==="
-	docker pull docker.io/zookeeper:$(ZOOKEEPER_TAG)
-	docker tag docker.io/zookeeper:$(ZOOKEEPER_TAG) $(DOCKER_REGISTRY)/theia-zookeeper:$(ZOOKEEPER_TAG)
+	@echo "===> Building theia-zookeeper (+ SBOM/LICENSE) from zookeeper:$(ZOOKEEPER_TAG) <==="
+	docker build --pull --build-arg UPSTREAM_TAG=$(ZOOKEEPER_TAG) \
+		-t $(DOCKER_REGISTRY)/theia-zookeeper:$(ZOOKEEPER_TAG) \
+		-f build/images/Dockerfile.zookeeper.wrapper .
 	docker push $(DOCKER_REGISTRY)/theia-zookeeper:$(ZOOKEEPER_TAG)
 
 # TODO: spark-operator is skipped from pull-upstream-images until a new
