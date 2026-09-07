@@ -368,22 +368,22 @@ function deliver_antrea {
 
     docker pull ${DOCKER_REGISTRY}/antrea/antrea-ubuntu:latest
     docker pull ${DOCKER_REGISTRY}/antrea/flow-aggregator:latest
-    docker pull projects.registry.vmware.com/antrea/theia-spark-operator:v1beta2-1.3.3-3.1.1
-    docker pull projects.registry.vmware.com/antrea/theia-zookeeper:3.8.0
+    docker pull ghcr.io/scoobed/theia-spark-operator:v1beta2-1.3.3-3.1.1
+    docker pull ghcr.io/scoobed/theia-zookeeper:3.8.0
 
     docker tag ${DOCKER_REGISTRY}/antrea/antrea-ubuntu:latest antrea/antrea-ubuntu:latest
     docker tag ${DOCKER_REGISTRY}/antrea/flow-aggregator:latest antrea/flow-aggregator:latest
     docker save -o antrea-ubuntu.tar antrea/antrea-ubuntu:latest
     docker save -o flow-aggregator.tar antrea/flow-aggregator:latest
-    docker save -o theia-spark-operator.tar projects.registry.vmware.com/antrea/theia-spark-operator:v1beta2-1.3.3-3.1.1
-    docker save -o theia-zookeeper.tar projects.registry.vmware.com/antrea/theia-zookeeper:3.8.0
+    docker save -o theia-spark-operator.tar ghcr.io/scoobed/theia-spark-operator:v1beta2-1.3.3-3.1.1
+    docker save -o theia-zookeeper.tar ghcr.io/scoobed/theia-zookeeper:3.8.0
 
 
     (cd $GIT_CHECKOUT_DIR && make clickhouse-monitor && make clickhouse-server && make theia-manager && make spark-jobs)
-    docker save -o theia-spark-jobs.tar projects.registry.vmware.com/antrea/theia-spark-jobs:latest
-    docker save -o theia-clickhouse-monitor.tar projects.registry.vmware.com/antrea/theia-clickhouse-monitor:latest
-    docker save -o theia-clickhouse-server.tar projects.registry.vmware.com/antrea/theia-clickhouse-server:latest
-    docker save -o theia-manager.tar projects.registry.vmware.com/antrea/theia-manager:latest
+    docker save -o theia-spark-jobs.tar ghcr.io/scoobed/theia-spark-jobs:latest
+    docker save -o theia-clickhouse-monitor.tar ghcr.io/scoobed/theia-clickhouse-monitor:latest
+    docker save -o theia-clickhouse-server.tar ghcr.io/scoobed/theia-clickhouse-server:latest
+    docker save -o theia-manager.tar ghcr.io/scoobed/theia-manager:latest
 
     # not sure the exact image tag, so read from yaml
     # and we assume the image tag is the same for all images in this yaml
@@ -404,12 +404,12 @@ function deliver_antrea {
         copy_image flow-aggregator.tar docker.io/antrea/flow-aggregator ${IPs[$i]} latest  true
         copy_image clickhouse-operator.tar projects.registry.vmware.com/antrea/clickhouse-operator  ${IPs[$i]} $image_tag true
         copy_image metrics-exporter.tar projects.registry.vmware.com/antrea/metrics-exporter  ${IPs[$i]} $image_tag true
-        copy_image theia-zookeeper.tar projects.registry.vmware.com/antrea/theia-zookeeper  ${IPs[$i]} 3.8.0 true
-        copy_image theia-spark-operator.tar projects.registry.vmware.com/antrea/theia-spark-operator ${IPs[$i]} v1beta2-1.3.3-3.1.1 true
-        copy_image theia-spark-jobs.tar projects.registry.vmware.com/antrea/theia-spark-jobs ${IPs[$i]} latest true
-        copy_image theia-clickhouse-monitor.tar projects.registry.vmware.com/antrea/theia-clickhouse-monitor ${IPs[$i]} latest true
-        copy_image theia-clickhouse-server.tar projects.registry.vmware.com/antrea/theia-clickhouse-server ${IPs[$i]} latest true
-        copy_image theia-manager.tar projects.registry.vmware.com/antrea/theia-manager ${IPs[$i]} latest true
+        copy_image theia-zookeeper.tar ghcr.io/scoobed/theia-zookeeper  ${IPs[$i]} 3.8.0 true
+        copy_image theia-spark-operator.tar ghcr.io/scoobed/theia-spark-operator ${IPs[$i]} v1beta2-1.3.3-3.1.1 true
+        copy_image theia-spark-jobs.tar ghcr.io/scoobed/theia-spark-jobs ${IPs[$i]} latest true
+        copy_image theia-clickhouse-monitor.tar ghcr.io/scoobed/theia-clickhouse-monitor ${IPs[$i]} latest true
+        copy_image theia-clickhouse-server.tar ghcr.io/scoobed/theia-clickhouse-server ${IPs[$i]} latest true
+        copy_image theia-manager.tar ghcr.io/scoobed/theia-manager ${IPs[$i]} latest true
     done
 }
 

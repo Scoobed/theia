@@ -78,7 +78,7 @@ COMMON_IMAGES_LIST=("registry.k8s.io/e2e-test-images/agnhost:2.29" \
                     "antrea/flow-aggregator:latest" \
                     "projects.registry.vmware.com/antrea/clickhouse-operator:0.21.0" \
                     "projects.registry.vmware.com/antrea/metrics-exporter:0.21.0" \
-                    "projects.registry.vmware.com/antrea/theia-zookeeper:3.8.0")
+                    "ghcr.io/scoobed/theia-zookeeper:3.8.0")
 
 for image in "${COMMON_IMAGES_LIST[@]}"; do
     echo "Pulling $image"
@@ -88,8 +88,8 @@ for image in "${COMMON_IMAGES_LIST[@]}"; do
     done
 done
 
-COMMON_IMAGES_LIST+=("projects.registry.vmware.com/antrea/theia-clickhouse-monitor:latest"\
-                     "projects.registry.vmware.com/antrea/theia-clickhouse-server:latest")
+COMMON_IMAGES_LIST+=("ghcr.io/scoobed/theia-clickhouse-monitor:latest"\
+                     "ghcr.io/scoobed/theia-clickhouse-server:latest")
 
 printf -v COMMON_IMAGES "%s " "${COMMON_IMAGES_LIST[@]}"
 

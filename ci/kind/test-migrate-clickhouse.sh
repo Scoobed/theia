@@ -184,10 +184,10 @@ DOCKER_IMAGES=("registry.k8s.io/e2e-test-images/agnhost:2.29" \
                 "projects.registry.vmware.com/antrea/metrics-exporter:$CH_OPERATOR_FROM_TAG" \
                 "projects.registry.vmware.com/antrea/clickhouse-operator:0.21.0" \
                 "projects.registry.vmware.com/antrea/metrics-exporter:0.21.0" \
-                "projects.registry.vmware.com/antrea/theia-zookeeper:3.8.0" \
+                "ghcr.io/scoobed/theia-zookeeper:3.8.0" \
                 "projects.registry.vmware.com/antrea/antrea-ubuntu:$ANTREA_FROM_TAG" \
-                "projects.registry.vmware.com/antrea/theia-clickhouse-monitor:$THEIA_FROM_TAG" \
-                "projects.registry.vmware.com/antrea/theia-clickhouse-server:$CLICKHOUSE_FROM_TAG" \
+                "ghcr.io/scoobed/theia-clickhouse-monitor:$THEIA_FROM_TAG" \
+                "ghcr.io/scoobed/theia-clickhouse-server:$CLICKHOUSE_FROM_TAG" \
                 "antrea/antrea-ubuntu:latest")
 
 for img in "${DOCKER_IMAGES[@]}"; do
@@ -198,8 +198,8 @@ for img in "${DOCKER_IMAGES[@]}"; do
     done
 done
 
-DOCKER_IMAGES+=("projects.registry.vmware.com/antrea/theia-clickhouse-monitor:latest\
-                 projects.registry.vmware.com/antrea/theia-clickhouse-server:latest")
+DOCKER_IMAGES+=("ghcr.io/scoobed/theia-clickhouse-monitor:latest\
+                 ghcr.io/scoobed/theia-clickhouse-server:latest")
 
 echo "Creating Kind cluster"
 IMAGES="${DOCKER_IMAGES[@]}"
@@ -240,7 +240,7 @@ TMP_THEIA_DIR=$(mktemp -d $(dirname $0)/tmp.XXXXXXXX)
 git clone --branch $THEIA_FROM_TAG --depth 1 https://github.com/antrea-io/theia.git $TMP_THEIA_DIR
 
 pushd $TMP_THEIA_DIR > /dev/null
-export IMG_NAME=projects.registry.vmware.com/antrea/theia-clickhouse-monitor
+export IMG_NAME=ghcr.io/scoobed/theia-clickhouse-monitor
 export IMG_TAG=$THEIA_FROM_TAG
 # In Theia v0.1.0, we do not support --local option when generating manifest,
 # Copy the latest script for release v0.1.0 to generate manifest.

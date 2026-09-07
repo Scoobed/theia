@@ -122,9 +122,9 @@ COMMON_IMAGES_LIST=("registry.k8s.io/e2e-test-images/agnhost:2.29" \
                     "antrea/flow-aggregator:latest" \
                     "projects.registry.vmware.com/antrea/clickhouse-operator:0.21.0" \
                     "projects.registry.vmware.com/antrea/metrics-exporter:0.21.0" \
-                    "projects.registry.vmware.com/antrea/theia-zookeeper:3.8.0" \
-                    "projects.registry.vmware.com/antrea/theia-grafana:8.3.3" \
-                    "projects.registry.vmware.com/antrea/theia-spark-operator:v1beta2-1.3.3-3.1.1")
+                    "ghcr.io/scoobed/theia-zookeeper:3.8.0" \
+                    "ghcr.io/scoobed/theia-grafana:8.3.3" \
+                    "ghcr.io/scoobed/theia-spark-operator:v1beta2-1.3.3-3.1.1")
 
 for image in "${COMMON_IMAGES_LIST[@]}"; do
     for i in `seq 3`; do
@@ -133,10 +133,10 @@ for image in "${COMMON_IMAGES_LIST[@]}"; do
     done
 done
 
-COMMON_IMAGES_LIST+=("projects.registry.vmware.com/antrea/theia-spark-jobs:latest"\
-                     "projects.registry.vmware.com/antrea/theia-clickhouse-monitor:latest"\
-                     "projects.registry.vmware.com/antrea/theia-clickhouse-server:latest"\
-                     "projects.registry.vmware.com/antrea/theia-manager:latest")
+COMMON_IMAGES_LIST+=("ghcr.io/scoobed/theia-spark-jobs:latest"\
+                     "ghcr.io/scoobed/theia-clickhouse-monitor:latest"\
+                     "ghcr.io/scoobed/theia-clickhouse-server:latest"\
+                     "ghcr.io/scoobed/theia-manager:latest")
 
 printf -v COMMON_IMAGES "%s " "${COMMON_IMAGES_LIST[@]}"
 

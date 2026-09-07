@@ -140,13 +140,13 @@ jobs:
       - name: Load Theia image
         run:  |
           docker load -i spark-jobs.tar
-          docker tag antrea/theia-spark-jobs:latest projects.registry.vmware.com/antrea/theia-spark-jobs:latest
+          docker tag antrea/theia-spark-jobs:latest ghcr.io/scoobed/theia-spark-jobs:latest
           docker load -i clickhouse-monitor.tar
-          docker tag antrea/theia-clickhouse-monitor:latest projects.registry.vmware.com/antrea/theia-clickhouse-monitor:latest
+          docker tag antrea/theia-clickhouse-monitor:latest ghcr.io/scoobed/theia-clickhouse-monitor:latest
           docker load -i clickhouse-server.tar
-          docker tag antrea/theia-clickhouse-server:latest projects.registry.vmware.com/antrea/theia-clickhouse-server:latest
+          docker tag antrea/theia-clickhouse-server:latest ghcr.io/scoobed/theia-clickhouse-server:latest
           docker load -i theia-manager.tar
-          docker tag antrea/theia-manager:latest projects.registry.vmware.com/antrea/theia-manager:latest
+          docker tag antrea/theia-manager:latest ghcr.io/scoobed/theia-manager:latest
       - name: Remove Theia images tar files
         run:  |
           rm -rf clickhouse-server.tar
@@ -214,9 +214,9 @@ jobs:
       - name: Load Theia image
         run:  |
           docker load -i clickhouse-monitor.tar
-          docker tag antrea/theia-clickhouse-monitor:latest projects.registry.vmware.com/antrea/theia-clickhouse-monitor:latest
+          docker tag antrea/theia-clickhouse-monitor:latest ghcr.io/scoobed/theia-clickhouse-monitor:latest
           docker load -i clickhouse-server.tar
-          docker tag antrea/theia-clickhouse-server:latest projects.registry.vmware.com/antrea/theia-clickhouse-server:latest
+          docker tag antrea/theia-clickhouse-server:latest ghcr.io/scoobed/theia-clickhouse-server:latest
       - name: Remove Theia images tar files
         run: |
           rm -rf clickhouse-server.tar
@@ -295,13 +295,13 @@ jobs:
       - name: Load Theia image
         run:  |
           docker load -i spark-jobs.tar
-          docker tag antrea/theia-spark-jobs:latest projects.registry.vmware.com/antrea/theia-spark-jobs:latest
+          docker tag antrea/theia-spark-jobs:latest ghcr.io/scoobed/theia-spark-jobs:latest
           docker load -i clickhouse-monitor.tar
-          docker tag antrea/theia-clickhouse-monitor:latest projects.registry.vmware.com/antrea/theia-clickhouse-monitor:latest
+          docker tag antrea/theia-clickhouse-monitor:latest ghcr.io/scoobed/theia-clickhouse-monitor:latest
           docker load -i clickhouse-server.tar
-          docker tag antrea/theia-clickhouse-server:latest projects.registry.vmware.com/antrea/theia-clickhouse-server:latest
+          docker tag antrea/theia-clickhouse-server:latest ghcr.io/scoobed/theia-clickhouse-server:latest
           docker load -i theia-manager.tar
-          docker tag antrea/theia-manager:latest projects.registry.vmware.com/antrea/theia-manager:latest
+          docker tag antrea/theia-manager:latest ghcr.io/scoobed/theia-manager:latest
       - name: Remove Theia images tar files
         run:  |
           rm -rf clickhouse-server.tar
@@ -363,9 +363,9 @@ jobs:
       - name: Load Theia clickhouse images
         run:  |
           docker load -i clickhouse-monitor.tar
-          docker tag antrea/theia-clickhouse-monitor:latest projects.registry.vmware.com/antrea/theia-clickhouse-monitor:latest
+          docker tag antrea/theia-clickhouse-monitor:latest ghcr.io/scoobed/theia-clickhouse-monitor:latest
           docker load -i clickhouse-server.tar
-          docker tag antrea/theia-clickhouse-server:latest projects.registry.vmware.com/antrea/theia-clickhouse-server:latest
+          docker tag antrea/theia-clickhouse-server:latest ghcr.io/scoobed/theia-clickhouse-server:latest
       - name: Remove Theia images tar files
         run:  |
           rm -rf clickhouse-server.tar

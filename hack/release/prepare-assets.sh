@@ -74,7 +74,7 @@ done
 
 export IMG_TAG=$VERSION
 
-export IMG_NAME=projects.registry.vmware.com/antrea/theia-clickhouse-monitor
+export IMG_NAME=ghcr.io/scoobed/theia-clickhouse-monitor
 ./hack/generate-manifest.sh --mode release > "$OUTPUT_DIR"/flow-visibility.yml
 
 cd -
