@@ -12,7 +12,7 @@ RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | 
 
 # NOTE: Uses the standard (non-distroless) image because the ClickHouse operator
 # injects shell commands (/bin/sh) during startup that require a shell.
-FROM docker.io/clickhouse/clickhouse-server:25.8.28.1
+FROM docker.io/clickhouse/clickhouse-server:26.8.2.7
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"
 LABEL description="A docker image to deploy the ClickHouse server."
