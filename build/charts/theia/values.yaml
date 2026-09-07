@@ -6,12 +6,12 @@ clickhouseOperator:
   # -- Container image for the ClickHouse Operator.
   image:
     repository: "ghcr.io/scoobed/theia-clickhouse-operator"
-    tag: "0.27.0"
+    tag: "0.27.4"
   # -- Container image for the ClickHouse Metrics Exporter.
   metricsExporter:
     image:
       repository: "ghcr.io/scoobed/theia-metrics-exporter"
-      tag: "0.27.0"
+      tag: "0.27.4"
   # -- Namespace where the ClickHouse Operator is installed.
   namespace: "kube-system"
 clickhouse:
@@ -239,7 +239,7 @@ grafana:
   image: 
     repository: "ghcr.io/scoobed/theia-grafana"
     pullPolicy: "IfNotPresent"
-    tag: "v0.9.1"
+    tag: "v0.9.2"
   # -- Credentials to login to Grafana. They will be stored in a Secret.
   loginSecret:
     username: "admin"
