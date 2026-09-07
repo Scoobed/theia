@@ -46,7 +46,7 @@ const (
 	K8sQuantitiesReg = "^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$"
 	// Spark related parameters for Policy Recommendation and Throughput Anomaly Detection
 	// spark jobs
-	SparkImage           = "projects.registry.vmware.com/antrea/theia-spark-jobs:latest"
+	SparkImage           = "ghcr.io/scoobed/theia-spark-jobs:latest"
 	SparkImagePullPolicy = "IfNotPresent"
 	SparkServiceAccount  = "theia-spark"
 	SparkVersion         = "3.1.1"
