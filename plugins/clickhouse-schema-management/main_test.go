@@ -251,9 +251,13 @@ func checkErrorMsg(t *testing.T) {
 			initExpectedErrorMsg: "error when generating version number map: unable to get files in folder migrators: ",
 		},
 		{
+			// A file with an underscore but a non-numeric golang-migrate version
+			// prefix still fails to parse and should return an error. (Files with
+			// no underscore at all are now skipped rather than erroring; see
+			// initializeVersionMap's unexpected-name-format handling.)
 			name: "Wrong migrator file name",
 			readDir: func(name string) ([]fs.DirEntry, error) {
-				file := fakeDirEntry{name: "0-1-0.up.sql", isDir: false}
+				file := fakeDirEntry{name: "abc_0-1-0.up.sql", isDir: false}
 				return []os.DirEntry{file}, nil
 			},
 			initExpectedErrorMsg: "error when generating version number map: error when parsing the version number: ",
