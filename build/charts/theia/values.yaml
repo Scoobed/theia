@@ -1,13 +1,15 @@
 # -- The ClickHouse Operator is installed via the official Altinity Helm chart
 # (https://github.com/Altinity/helm-charts/tree/main/charts/clickhouse-operator)
-# as a chart dependency (see Chart.yaml), aliased to "clickhouseOperator" here.
-# This section configures that subchart directly; run `helm dependency update`
+# as a chart dependency (see Chart.yaml), configured directly under its own
+# chart name here (not aliased: the subchart's Deployment template uses the
+# literal .Chart.Name for its container name, which an alias would turn into
+# an invalid, non-RFC1123 camelCase value). Run `helm dependency update`
 # after bumping the pinned version in Chart.yaml. CRDs are installed/updated
 # automatically via the subchart's pre-install/pre-upgrade hooks
 # (crdHook.enable, left at its default of true).
 # See `helm show values altinity/altinity-clickhouse-operator --version <ver>`
 # for the full set of available values.
-clickhouseOperator:
+altinity-clickhouse-operator:
   # -- Whether to install the ClickHouse Operator via this chart.
   enabled: true
   # -- Namespace to install the operator into. Empty uses the release's own
