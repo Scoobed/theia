@@ -49,7 +49,7 @@
   command:
     - /bin/sh
     - -c
-    - chown -R clickhouse:clickhouse /var/lib/clickhouse && /entrypoint.sh
+    - chown -R {{ $clickhouse.storage.ownerUser }}:{{ $clickhouse.storage.ownerGroup }} /var/lib/clickhouse && /entrypoint.sh
   volumeMounts:
     - name: clickhouse-configmap-volume
       mountPath: /docker-entrypoint-initdb.d

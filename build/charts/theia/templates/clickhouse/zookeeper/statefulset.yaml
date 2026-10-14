@@ -35,6 +35,23 @@ spec:
                     values:
                       - zookeeper
               topologyKey: "kubernetes.io/hostname"
+      {{- if .Values.clickhouse.cluster.installZookeeper.initChownData.enable }}
+      initContainers:
+        - name: init-chown-data
+          image: {{ .Values.clickhouse.cluster.installZookeeper.image.repository }}:{{ .Values.clickhouse.cluster.installZookeeper.image.tag }}
+          imagePullPolicy: {{ .Values.clickhouse.cluster.installZookeeper.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          command:
+            - chown
+            - -R
+            - "{{ .Values.clickhouse.cluster.installZookeeper.securityContext.runAsUser | default 1000 }}:{{ .Values.clickhouse.cluster.installZookeeper.securityContext.fsGroup | default 1000 }}"
+            - /var/lib/zookeeper
+          volumeMounts:
+            - name: datadir-volume
+              mountPath: /var/lib/zookeeper
+      {{- end }}
       containers:
         - name: kubernetes-zookeeper
           imagePullPolicy: {{ .Values.clickhouse.cluster.installZookeeper.image.pullPolicy }}
@@ -73,6 +90,7 @@ spec:
               PROMETHEUS_PORT=7000 &&
               ZOO_DATA_DIR=/var/lib/zookeeper/data &&
               ZOO_DATA_LOG_DIR=/var/lib/zookeeper/datalog &&
+              OWNER={{ .Values.clickhouse.cluster.installZookeeper.securityContext.runAsUser | default 1000 }}:{{ .Values.clickhouse.cluster.installZookeeper.securityContext.fsGroup | default 1000 }} &&
               {
                 echo "clientPort=${CLIENT_PORT}"
                 echo 'tickTime=2000'
@@ -132,8 +150,8 @@ spec:
                   fi
                   echo "weight.$i=$WEIGHT" >> /conf/zoo.cfg;
               done &&
-              chown -Rv zookeeper "$ZOO_DATA_DIR" "$ZOO_DATA_LOG_DIR" "$ZOO_LOG_DIR" &&
-              chown zookeeper /conf/zoo.cfg /conf/log4j.properties /conf/java.env &&
+              chown -Rv "$OWNER" "$ZOO_DATA_DIR" "$ZOO_DATA_LOG_DIR" "$ZOO_LOG_DIR" &&
+              chown "$OWNER" /conf/zoo.cfg /conf/log4j.properties /conf/java.env &&
               zkServer.sh start-foreground
           readinessProbe:
             exec:

@@ -20,14 +20,23 @@ spec:
       securityContext:
         {{- toYaml . | trim | nindent 8 }}
       {{- end }}
+      {{- if .Values.grafana.initChownData.enable }}
       initContainers:
-        - name: init-pv
-          image: docker.io/busybox
-          imagePullPolicy: IfNotPresent
-          command: ["chown", "-R", "472:472", "/var/lib/grafana"]
+        - name: init-chown-data
+          image: "{{ .Values.grafana.initChownData.image.repository }}:{{ .Values.grafana.initChownData.image.tag }}"
+          imagePullPolicy: {{ .Values.grafana.initChownData.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          command:
+            - chown
+            - -R
+            - "{{ .Values.grafana.securityContext.runAsUser | default 472 }}:{{ .Values.grafana.securityContext.fsGroup | default 472 }}"
+            - /var/lib/grafana
           volumeMounts:
           - mountPath: /var/lib/grafana
             name: grafana-pv
+      {{- end }}
       containers:
         - name: grafana
           image: {{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}

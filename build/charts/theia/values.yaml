@@ -1,25 +1,59 @@
-# -- ClickHouse Operator images. These override the images in the CRD bundle.
-# The operator is installed via the CRD bundle in crds/. To use custom images,
-# update these values AND run the generate-operator-bundle.sh script, or
-# manually update crds/clickhouse-operator-install-bundle.yaml.
+# -- The ClickHouse Operator is installed via the official Altinity Helm chart
+# (https://github.com/Altinity/helm-charts/tree/main/charts/clickhouse-operator)
+# as a chart dependency (see Chart.yaml), aliased to "clickhouseOperator" here.
+# This section configures that subchart directly; run `helm dependency update`
+# after bumping the pinned version in Chart.yaml. CRDs are installed/updated
+# automatically via the subchart's pre-install/pre-upgrade hooks
+# (crdHook.enable, left at its default of true).
+# See `helm show values altinity/altinity-clickhouse-operator --version <ver>`
+# for the full set of available values.
 clickhouseOperator:
-  # -- Container image for the ClickHouse Operator.
-  image:
-    repository: "ghcr.io/scoobed/theia-clickhouse-operator"
-    tag: "0.27.4"
-  # -- Container image for the ClickHouse Metrics Exporter.
-  metricsExporter:
+  # -- Whether to install the ClickHouse Operator via this chart.
+  enabled: true
+  # -- Namespace to install the operator into. Empty uses the release's own
+  # namespace; "kube-system" preserves the traditional singleton/watch-all-
+  # namespaces pattern.
+  namespaceOverride: "kube-system"
+  # -- Pin resource names to "clickhouse-operator" (ServiceAccount, Secret,
+  # Deployment, ClusterRole/ClusterRoleBinding) regardless of release name.
+  fullnameOverride: "clickhouse-operator"
+  rbac:
+    # -- Use cluster-scoped ClusterRole/ClusterRoleBinding (false) or
+    # namespace-scoped Role/RoleBinding (true).
+    namespaceScoped: false
+  secret:
+    # -- Username for the operator's own ClickHouse access credentials.
+    username: "clickhouse_operator"
+    # -- Password for the operator's own ClickHouse access credentials.
+    password: "clickhouse_operator_password"
+  operator:
     image:
-      repository: "ghcr.io/scoobed/theia-metrics-exporter"
+      # -- Container image repository for the ClickHouse Operator.
+      repository: "ghcr.io/scoobed/theia-clickhouse-operator"
+      # -- Container image tag for the ClickHouse Operator.
       tag: "0.27.4"
-  # -- Namespace where the ClickHouse Operator is installed.
-  namespace: "kube-system"
+  metrics:
+    image:
+      # -- Container image repository for the ClickHouse Metrics Exporter.
+      repository: "ghcr.io/scoobed/theia-metrics-exporter"
+      # -- Container image tag for the ClickHouse Metrics Exporter.
+      tag: "0.27.4"
 clickhouse:
   # -- Container image used by ClickHouse.
   image: 
     repository: "ghcr.io/scoobed/theia-clickhouse-server"
     pullPolicy: "IfNotPresent"
     tag: ""
+  # -- Set securityContext for the ClickHouse server and monitor Pods. Leave
+  # empty (the default) to run as the image's default user (normally root,
+  # which the container needs in order to chown /var/lib/clickhouse on
+  # startup). To run as a non-root user (e.g. nobody), set runAsUser and
+  # runAsGroup here to match storage.ownerUser/ownerGroup below. Note: the
+  # data volume must already be owned by that user/group (e.g. by first
+  # deploying once with the default root user, or by pre-provisioning the
+  # volume/NFS export with matching ownership), since the in-container
+  # chown can only succeed as root or as a no-op self-chown.
+  securityContext: {}
   logger:
     # -- Logging level. Acceptable values: trace, debug, information, warning, error.
     level: information
@@ -95,6 +129,14 @@ clickhouse:
   # YEAR.
   ttl: 12 HOUR
   storage:
+    # -- The user (name or numeric uid) that should own the ClickHouse data
+    # directory. Must match securityContext.runAsUser when running as a
+    # non-root user such as nobody (65534).
+    ownerUser: "clickhouse"
+    # -- The group (name or numeric gid) that should own the ClickHouse data
+    # directory. Must match securityContext.runAsGroup/fsGroup when running
+    # as a non-root user such as nobody (65534).
+    ownerGroup: "clickhouse"
     # -- ClickHouse storage size. Can be a plain integer or as a fixed-point
     # number using one of these quantity suffixes: E, P, T, G, M, K. Or the
     # power-of-two equivalents: Ei, Pi, Ti, Gi, Mi, Ki.
@@ -162,6 +204,13 @@ clickhouse:
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
+      # -- Init container that fixes ownership of the ZooKeeper data volume
+      # to securityContext.runAsUser/fsGroup before ZooKeeper starts,
+      # allowing the main container to run as a non-root user (e.g.
+      # nobody). Disable if the volume's ownership is already managed
+      # externally (e.g. via the NFS export).
+      initChownData:
+        enable: true
       storage:
         # -- Zookeeper storage size. Can be a plain integer or as a fixed-point
         # number using one of these quantity suffixes: E, P, T, G, M, K. Or the
@@ -235,6 +284,17 @@ grafana:
     fsGroup: 472
     supplementalGroups:
       - 0 
+  # -- Init container that fixes ownership of the Grafana data volume to
+  # securityContext.runAsUser/fsGroup before Grafana starts, allowing the
+  # main container to run as a non-root user (e.g. nobody). Disable if the
+  # volume's ownership is already managed externally (e.g. via the NFS
+  # export).
+  initChownData:
+    enable: true
+    image:
+      repository: "docker.io/busybox"
+      tag: "latest"
+      pullPolicy: "IfNotPresent"
   # -- Container image used by Grafana.
   image: 
     repository: "ghcr.io/scoobed/theia-grafana"

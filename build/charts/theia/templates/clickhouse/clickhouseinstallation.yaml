@@ -9,9 +9,22 @@ metadata:
 spec:
   configuration:
     users:
-      {{ .Values.clickhouse.connectionSecret.username }}/k8s_secret_password: {{ .Release.Namespace }}/clickhouse-secret/password
+      # clickhouse-operator 0.27.4 removed the 'k8s_secret_password' (and
+      # '_sha256_hex'/'_double_sha1_hex') secret-ref syntax entirely; CHIs
+      # using it are rejected at reconcile time (reason: RemovedSecretRefSyntax).
+      # Use the standard valueFrom/secretKeyRef syntax instead, which the
+      # operator resolves within the CHI's own namespace.
+      {{ .Values.clickhouse.connectionSecret.username }}/password:
+        valueFrom:
+          secretKeyRef:
+            name: clickhouse-secret
+            key: password
       {{ .Values.clickhouse.connectionSecret.username }}/networks/ip: "::/0"
-      {{ .Values.clickhouse.connectionSecret.readOnlyUsername }}/k8s_secret_password: {{ .Release.Namespace }}/clickhouse-secret/readOnlyPassword
+      {{ .Values.clickhouse.connectionSecret.readOnlyUsername }}/password:
+        valueFrom:
+          secretKeyRef:
+            name: clickhouse-secret
+            key: readOnlyPassword
       {{ .Values.clickhouse.connectionSecret.readOnlyUsername }}/profile: readonly
       {{ .Values.clickhouse.connectionSecret.readOnlyUsername }}/networks/ip: "::/0"
     profiles:
@@ -90,6 +103,10 @@ spec:
       {{- if gt (int .Values.clickhouse.cluster.replicas) 1 }}
       - name: pod-template-without-monitor
         spec:
+          {{- with .Values.clickhouse.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           containers:
             {{- include "clickhouse.server.container" (dict "clickhouse" .Values.clickhouse "enablePV" $enablePV "Chart" .Chart) | indent 12 }}
           volumes:
@@ -103,6 +120,10 @@ spec:
       {{- end }}
       - name: pod-template
         spec:
+          {{- with .Values.clickhouse.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           containers:
             {{- include "clickhouse.server.container" (dict "clickhouse" .Values.clickhouse "enablePV" $enablePV "Chart" .Chart) | indent 12 }}
             {{- if .Values.clickhouse.monitor.enable }}
