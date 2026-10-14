@@ -6,6 +6,7 @@ on:
 
 jobs:
   upload-release-assets:
+    if: github.repository == 'antrea-io/theia'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4

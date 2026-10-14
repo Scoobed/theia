@@ -7,6 +7,7 @@ on:
 
 jobs:
   get-version:
+    if: github.repository == 'antrea-io/theia'
     runs-on: [ubuntu-latest]
     outputs:
       version: ${{ steps.get-version.outputs.version }}
