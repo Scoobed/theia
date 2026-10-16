@@ -35,6 +35,9 @@ spec:
                     values:
                       - zookeeper
               topologyKey: "kubernetes.io/hostname"
+      {{- with .Values.clickhouse.cluster.installZookeeper.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
       {{- if .Values.clickhouse.cluster.installZookeeper.initChownData.enable }}
       initContainers:
         - name: init-chown-data
@@ -43,6 +46,8 @@ spec:
           securityContext:
             runAsUser: 0
             runAsNonRoot: false
+          resources:
+            {{- toYaml .Values.clickhouse.cluster.installZookeeper.initChownData.resources | nindent 12 }}
           command:
             - chown
             - -R
@@ -57,12 +62,7 @@ spec:
           imagePullPolicy: {{ .Values.clickhouse.cluster.installZookeeper.image.pullPolicy }}
           image: {{ .Values.clickhouse.cluster.installZookeeper.image.repository }}:{{ .Values.clickhouse.cluster.installZookeeper.image.tag }}
           resources:
-            requests:
-              memory: "512M"
-              cpu: "1"
-            limits:
-              memory: "4Gi"
-              cpu: "2"
+            {{- toYaml .Values.clickhouse.cluster.installZookeeper.resources | nindent 12 }}
           ports:
             - containerPort: 2181
               name: client

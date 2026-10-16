@@ -21,6 +21,9 @@ spec:
       labels:
         app.kubernetes.io/name: spark-operator
     spec:
+      {{- with .Values.sparkOperator.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
       serviceAccountName: {{ .Values.sparkOperator.name }}-spark-operator
       securityContext:
         {}
@@ -51,5 +54,5 @@ spec:
         - -metrics-prefix=
         - -enable-resource-quota-enforcement=false
         resources:
-          {}
+          {{- toYaml .Values.sparkOperator.resources | nindent 10 }}
 {{- end }}

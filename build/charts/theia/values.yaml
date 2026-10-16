@@ -56,6 +56,11 @@ clickhouse:
   # volume/NFS export with matching ownership), since the in-container
   # chown can only succeed as root or as a no-op self-chown.
   securityContext: {}
+  # -- Pod priorityClassName for the ClickHouse Pods (server + monitor
+  # containers share one pod, so this applies to both).
+  priorityClassName: ""
+  # -- Resource requests/limits for the ClickHouse server container.
+  resources: {}
   logger:
     # -- Logging level. Acceptable values: trace, debug, information, warning, error.
     level: information
@@ -85,6 +90,8 @@ clickhouse:
       repository: "ghcr.io/scoobed/theia-clickhouse-monitor"
       pullPolicy: "IfNotPresent"
       tag: ""
+    # -- Resource requests/limits for the ClickHouse Monitor container.
+    resources: {}
   # -- Credentials to connect to ClickHouse. They will be stored in a secret.
   connectionSecret:
     username: "clickhouse_operator"
@@ -206,6 +213,16 @@ clickhouse:
       securityContext:
         runAsUser: 1000
         fsGroup: 1000
+      # -- Pod priorityClassName for the ZooKeeper Pods.
+      priorityClassName: ""
+      # -- Resource requests/limits for the ZooKeeper container.
+      resources:
+        requests:
+          memory: "512M"
+          cpu: "1"
+        limits:
+          memory: "4Gi"
+          cpu: "2"
       # -- Init container that fixes ownership of the ZooKeeper data volume
       # to securityContext.runAsUser/fsGroup before ZooKeeper starts,
       # allowing the main container to run as a non-root user (e.g.
@@ -213,6 +230,8 @@ clickhouse:
       # externally (e.g. via the NFS export).
       initChownData:
         enable: true
+        # -- Resource requests/limits for the init-chown-data container.
+        resources: {}
       storage:
         # -- Zookeeper storage size. Can be a plain integer or as a fixed-point
         # number using one of these quantity suffixes: E, P, T, G, M, K. Or the
@@ -286,6 +305,20 @@ grafana:
     fsGroup: 472
     supplementalGroups:
       - 0 
+  # -- Pod priorityClassName for the Grafana Pod.
+  priorityClassName: ""
+  # -- Resource requests/limits for the Grafana container.
+  resources:
+    requests:
+      cpu: 250m
+      memory: 750Mi
+  # -- Additional volumes to add to the Grafana Pod (e.g. for mounting extra
+  # ConfigMaps, Secrets, or external plugin/provisioning sources). Must be
+  # used together with extraVolumeMounts. Rendered as-is via toYaml.
+  extraVolumes: []
+  # -- Additional volumeMounts to add to the Grafana container, paired with
+  # extraVolumes above. Rendered as-is via toYaml.
+  extraVolumeMounts: []
   # -- Init container that fixes ownership of the Grafana data volume to
   # securityContext.runAsUser/fsGroup before Grafana starts, allowing the
   # main container to run as a non-root user (e.g. nobody). Disable if the
@@ -297,6 +330,8 @@ grafana:
       repository: "docker.io/busybox"
       tag: "latest"
       pullPolicy: "IfNotPresent"
+    # -- Resource requests/limits for the init-chown-data container.
+    resources: {}
   # -- Container image used by Grafana.
   image: 
     repository: "ghcr.io/scoobed/theia-grafana"
@@ -386,6 +421,10 @@ sparkOperator:
     repository: "ghcr.io/scoobed/theia-spark-operator"
     pullPolicy: "IfNotPresent"
     tag: "v1beta2-1.3.3-3.1.1"
+  # -- Pod priorityClassName for the Spark Operator Pod.
+  priorityClassName: ""
+  # -- Resource requests/limits for the Spark Operator container.
+  resources: {}
 theiaManager:
   # -- Determine whether to install Theia Manager.
   enable: true
@@ -394,6 +433,10 @@ theiaManager:
     repository: "ghcr.io/scoobed/theia-manager"
     pullPolicy: "IfNotPresent"
     tag: ""
+  # -- Pod priorityClassName for the Theia Manager Pod.
+  priorityClassName: ""
+  # -- Resource requests/limits for the Theia Manager container.
+  resources: {}
   # apiServer contains APIServer related configuration options.
   apiServer:
     # -- The port for the Theia Manager APIServer to serve on.

@@ -4,6 +4,8 @@
 - name: clickhouse-monitor
   image: {{ include "clickHouseMonitorImage" . | quote }}
   imagePullPolicy: {{ $clickhouse.monitor.image.pullPolicy }}
+  resources:
+    {{- toYaml $clickhouse.monitor.resources | nindent 4 }}
   volumeMounts:
     - name: clickhouse-monitor-coverage
       mountPath: /clickhouse-monitor-coverage
@@ -46,6 +48,8 @@
 - name: clickhouse
   image: {{ include "clickHouseServerImage" . | quote }}
   imagePullPolicy: {{ $clickhouse.image.pullPolicy }}
+  resources:
+    {{- toYaml $clickhouse.resources | nindent 4 }}
   command:
     - /bin/sh
     - -c

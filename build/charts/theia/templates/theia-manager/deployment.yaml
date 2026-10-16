@@ -54,6 +54,8 @@ spec:
               value: "tcp://clickhouse-clickhouse.{{ .Release.Namespace }}.svc:{{ .Values.clickhouse.service.tcpPort }}"
             - name: GOCOVERDIR
               value: "/theia-manager-coverage"
+          resources:
+            {{- toYaml .Values.theiaManager.resources | nindent 12 }}
           ports:
             - name: "theia-api-http"
               containerPort: {{ .Values.theiaManager.apiServer.apiPort }}
@@ -67,6 +69,9 @@ spec:
               name: host-var-log-antrea-theia-manager
             - mountPath: /theia-manager-coverage
               name: theia-manager-coverage
+      {{- with .Values.theiaManager.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
       nodeSelector:
         kubernetes.io/os: linux
         kubernetes.io/arch: amd64
