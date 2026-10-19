@@ -6,8 +6,13 @@ USER root
 # Create custom plugins directory outside the PVC mount path
 RUN mkdir -p /opt/grafana/plugins
 
-# Install the ClickHouse datasource plugin to the custom path
-RUN grafana cli --pluginsDir /opt/grafana/plugins plugins install grafana-clickhouse-datasource
+# Install the ClickHouse datasource plugin to the custom path.
+# Pinned explicitly: an unversioned install can resolve to an old,
+# incompatible release (observed: 2.2.0, which predates the plugin's
+# Grafana 13 support). v4.15+ is required for Grafana >=11.6.0 per the
+# plugin's own compatibility matrix; 4.22.1 is the latest as of this pin.
+ARG CLICKHOUSE_DATASOURCE_PLUGIN_VERSION=4.22.1
+RUN grafana cli --pluginsDir /opt/grafana/plugins plugins install grafana-clickhouse-datasource ${CLICKHOUSE_DATASOURCE_PLUGIN_VERSION}
 COPY plugins/grafana-custom-plugins/grafana-sankey-plugin/dist/ /opt/grafana/plugins/theia-grafana-sankey-plugin/
 COPY plugins/grafana-custom-plugins/grafana-chord-plugin/dist/ /opt/grafana/plugins/theia-grafana-chord-plugin/
 COPY plugins/grafana-custom-plugins/grafana-dependency-plugin/dist/ /opt/grafana/plugins/theia-grafana-dependency-plugin/
