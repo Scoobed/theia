@@ -103,6 +103,10 @@ spec:
       {{- if gt (int .Values.clickhouse.cluster.replicas) 1 }}
       - name: pod-template-without-monitor
         spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.clickhouse.priorityClassName }}
           priorityClassName: {{ . }}
           {{- end }}
@@ -123,6 +127,10 @@ spec:
       {{- end }}
       - name: pod-template
         spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.clickhouse.priorityClassName }}
           priorityClassName: {{ . }}
           {{- end }}

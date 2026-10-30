@@ -25,6 +25,10 @@ spec:
         prometheus.io/port: '7000'
         prometheus.io/scrape: 'true'
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

@@ -16,7 +16,7 @@ if [[ "$MODE" != build && "$MODE" != push ]]; then
 fi
 args=()
 for key in GO_IMAGE STATIC_IMAGE CLICKHOUSE_IMAGE GRAFANA_IMAGE GRAFANA_BUILD_IMAGE \
-           OPERATOR_IMAGE METRICS_IMAGE ZOOKEEPER_IMAGE INIT_IMAGE SYFT_IMAGE; do
+           OPERATOR_IMAGE METRICS_IMAGE ZOOKEEPER_IMAGE KUBECTL_IMAGE SYFT_IMAGE; do
     args+=(--build-arg "$key=${!key}")
 done
 args+=(--build-arg "VERSION=$TAG" --build-arg "VCS_REF=$(git rev-parse HEAD)")
@@ -29,6 +29,7 @@ components=(
     "metrics:theia-metrics-exporter"
     "zookeeper:theia-zookeeper"
     "init:theia-init"
+    "kubectl:theia-kubectl"
 )
 for component in "${components[@]}"; do
     target="${component%%:*}"
@@ -39,10 +40,7 @@ for component in "${components[@]}"; do
     fi
     output=(--load)
     if [[ "$MODE" == push ]]; then
-        # Preserve the tested local image; attach full-image attestations separately
-        # through the release workflow when building for multiple platforms.
-        docker push "$image"
-        continue
+        output=(--push --provenance=mode=max --sbom=true)
     fi
     docker buildx build --pull --platform "${PLATFORM:-linux/amd64}" \
         "${output[@]}" "${args[@]}" --target "$target" \

@@ -1,0 +1,64 @@
+{{- if .Values.clickhouse.schemaCheck.enable }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-schema-ready" .Release.Name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  activeDeadlineSeconds: {{ .Values.clickhouse.schemaCheck.timeoutSeconds }}
+  backoffLimit: 0
+  template:
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+      containers:
+        - name: schema-ready
+          image: {{ include "clickHouseServerImage" (dict "clickhouse" .Values.clickhouse "Chart" .Chart) | quote }}
+          imagePullPolicy: {{ .Values.clickhouse.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              for ((attempt=0; attempt < {{ div .Values.clickhouse.schemaCheck.timeoutSeconds 5 }}; attempt++)); do
+                count=$(clickhouse client --host "$DB_HOST" --user "$DB_USER" \
+                  --query \
+                  "SELECT count() FROM system.tables WHERE database = 'default' AND name IN ('flows', 'recommendations', 'tadetector')" 2>/dev/null)
+                if [[ "$count" == 3 ]]; then
+                  printf 'ClickHouse distributed schema is ready\n'
+                  exit 0
+                fi
+                sleep 5
+              done
+              printf 'ClickHouse schema initialization did not complete\n' >&2
+              exit 1
+          env:
+            - name: DB_HOST
+              value: "clickhouse-clickhouse.{{ .Release.Namespace }}.svc"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-secret
+                  key: readOnlyUsername
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: clickhouse-secret
+                  key: readOnlyPassword
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+{{- end }}

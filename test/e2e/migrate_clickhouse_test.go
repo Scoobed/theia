@@ -25,8 +25,7 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	"sigs.k8s.io/yaml"
 
-	antreav1alpha1 "antrea.io/antrea/pkg/apis/crd/v1alpha1"
-	antreav1alpha2 "antrea.io/antrea/pkg/apis/crd/v1alpha2"
+	antreav1beta1 "antrea.io/antrea/pkg/apis/crd/v1beta1"
 )
 
 var (
@@ -158,15 +157,15 @@ func checkRecommendationsVersion4(t *testing.T, data *TestData, id string, kind 
 	// Parse the recommendationed policy to corresponding type to verify there is no error
 	switch kind {
 	case "acnp":
-		var acnp antreav1alpha1.ClusterNetworkPolicy
+		var acnp antreav1beta1.ClusterNetworkPolicy
 		err = yaml.Unmarshal([]byte(queryOutput), &acnp)
 		require.NoErrorf(t, err, "failed to parse the policy with kind acnp, yaml: %s", queryOutput)
 	case "anp":
-		var anp antreav1alpha1.NetworkPolicy
+		var anp antreav1beta1.NetworkPolicy
 		err = yaml.Unmarshal([]byte(queryOutput), &anp)
 		require.NoErrorf(t, err, "failed to parse the policy with kind anp, yaml: %s", queryOutput)
 	case "acg":
-		var acg antreav1alpha2.ClusterGroup
+		var acg antreav1beta1.ClusterGroup
 		err = yaml.Unmarshal([]byte(queryOutput), &acg)
 		require.NoErrorf(t, err, "failed to parse the policy with kind acg, yaml: %s", queryOutput)
 	case "knp":

@@ -251,9 +251,9 @@ func checkErrorMsg(t *testing.T) {
 			initExpectedErrorMsg: "error when generating version number map: unable to get files in folder migrators: ",
 		},
 		{
-			name: "Wrong migrator file name",
+			name: "Non-numeric migration sequence",
 			readDir: func(name string) ([]fs.DirEntry, error) {
-				file := fakeDirEntry{name: "0-1-0.up.sql", isDir: false}
+				file := fakeDirEntry{name: "invalid_0-1-0.up.sql", isDir: false}
 				return []os.DirEntry{file}, nil
 			},
 			initExpectedErrorMsg: "error when generating version number map: error when parsing the version number: ",

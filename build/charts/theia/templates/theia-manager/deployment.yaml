@@ -16,6 +16,15 @@ spec:
       labels:
         app: theia-manager
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
       containers:
         - name: theia-manager
           image: {{ include "theiaManagerImage" . | quote }}
@@ -23,7 +32,7 @@ spec:
           args:
             - --config
             - /etc/theia-manager/theia-manager.conf
-            - --logtostderr=false
+            - --logtostderr=true
             - --log_dir=/var/log/antrea/theia-manager
             - --alsologtostderr
             - --log_file_max_size=100
@@ -60,6 +69,10 @@ spec:
             - name: "theia-api-http"
               containerPort: {{ .Values.theiaManager.apiServer.apiPort }}
           volumeMounts:
+            - mountPath: /var/run/theia
+              name: theia-runtime
+            - mountPath: /var/run/antrea
+              name: antrea-runtime
             - mountPath: /etc/theia-manager
               name: theia-manager-config
               readOnly: true
@@ -77,6 +90,10 @@ spec:
         kubernetes.io/arch: amd64
       serviceAccountName: theia-manager
       volumes:
+        - name: theia-runtime
+          emptyDir: {}
+        - name: antrea-runtime
+          emptyDir: {}
         - name: theia-manager-config
           configMap:
             name: theia-manager-configmap
@@ -87,11 +104,7 @@ spec:
             defaultMode: 0400
             optional: true
         - name: host-var-log-antrea-theia-manager
-          hostPath:
-            path: /var/log/antrea/theia-manager
-            type: DirectoryOrCreate
+          emptyDir: {}
         - name: theia-manager-coverage
-          hostPath:
-            path: /var/log/tm-coverage
-            type: DirectoryOrCreate
+          emptyDir: {}
 {{- end }}

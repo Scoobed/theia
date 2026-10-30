@@ -167,8 +167,16 @@ func RunClickHouseQuery(connect *sql.DB, query string, id string) (err error) {
 }
 
 func GetSparkJobIds(connect *sql.DB, tableName string) ([]string, error) {
-	query := `SELECT DISTINCT id FROM %s;`
-	rows, err := connect.Query(query, tableName)
+	var query string
+	switch tableName {
+	case "recommendations":
+		query = "SELECT DISTINCT id FROM recommendations;"
+	case "tadetector":
+		query = "SELECT DISTINCT id FROM tadetector;"
+	default:
+		return nil, fmt.Errorf("unsupported job table %q", tableName)
+	}
+	rows, err := connect.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read from ClickHouse: %v", err)
 	}
@@ -182,7 +190,7 @@ func GetSparkJobIds(connect *sql.DB, tableName string) ([]string, error) {
 		}
 		idList = append(idList, id)
 	}
-	return idList, nil
+	return idList, rows.Err()
 }
 
 func GetSparkApplication(client kubernetes.Interface, name string, namespace string) (sparkApp sparkv1.SparkApplication, err error) {

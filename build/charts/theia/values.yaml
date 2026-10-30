@@ -1,3 +1,8 @@
+# -- GHCR pull Secrets in the release namespace for Theia Pods and schema hooks.
+# Configure the operator's separate imagePullSecrets and crdHook.imagePullSecrets
+# below as well; their Secrets must exist in the operator namespace.
+imagePullSecrets: []
+
 # -- The ClickHouse Operator is installed via the official Altinity Helm chart
 # (https://github.com/Altinity/helm-charts/tree/main/charts/clickhouse-operator)
 # as a chart dependency (see Chart.yaml), configured directly under its own
@@ -19,6 +24,13 @@ altinity-clickhouse-operator:
   # -- Pin resource names to "clickhouse-operator" (ServiceAccount, Secret,
   # Deployment, ClusterRole/ClusterRoleBinding) regardless of release name.
   fullnameOverride: "clickhouse-operator"
+  imagePullSecrets: []
+  crdHook:
+    imagePullSecrets: []
+    image:
+      repository: "ghcr.io/scoobed/theia-kubectl"
+      tag: "0.9.3"
+      pullPolicy: "IfNotPresent"
   rbac:
     # -- Use cluster-scoped ClusterRole/ClusterRoleBinding (false) or
     # namespace-scoped Role/RoleBinding (true).
@@ -39,8 +51,12 @@ altinity-clickhouse-operator:
       # -- Container image repository for the ClickHouse Metrics Exporter.
       repository: "ghcr.io/scoobed/theia-metrics-exporter"
       # -- Container image tag for the ClickHouse Metrics Exporter.
-      tag: "0.27.4"
+      tag: "0.9.3"
 clickhouse:
+  # -- Wait for operator reconciliation and initialized distributed tables.
+  schemaCheck:
+    enable: true
+    timeoutSeconds: 600
   # -- Container image used by ClickHouse.
   image: 
     repository: "ghcr.io/scoobed/theia-clickhouse-server"

@@ -93,7 +93,7 @@ func createAPIServerConfig(
 		return nil, err
 	}
 
-	if err := os.MkdirAll(path.Dir(apiserver.TokenPath), os.ModeDir); err != nil {
+	if err := os.MkdirAll(path.Dir(apiserver.TokenPath), 0700); err != nil {
 		return nil, fmt.Errorf("error when creating dirs of token file: %v", err)
 	}
 	if err := os.WriteFile(apiserver.TokenPath, []byte(serverConfig.LoopbackClientConfig.BearerToken), 0600); err != nil {

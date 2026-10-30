@@ -1,15 +1,15 @@
 # syntax=docker/dockerfile:1
 # Inputs are supplied from release.env by hack/build-release-images.sh.
-ARG GO_IMAGE
-ARG STATIC_IMAGE
-ARG CLICKHOUSE_IMAGE
-ARG GRAFANA_IMAGE
-ARG GRAFANA_BUILD_IMAGE
-ARG OPERATOR_IMAGE
-ARG METRICS_IMAGE
-ARG ZOOKEEPER_IMAGE
-ARG INIT_IMAGE
-ARG SYFT_IMAGE
+ARG GO_IMAGE=dhi.io/golang:1.27.3-debian13-dev@sha256:1a1525863730c4f72323b521df75bb51ac9278d5a2c7e4978dc2884ed4b62439
+ARG STATIC_IMAGE=dhi.io/static:20250419-debian13@sha256:66e3dac42874997512a34ac68b59fa424a261394618b6ba0642454522aef4565
+ARG CLICKHOUSE_IMAGE=docker.io/clickhouse/clickhouse-server:26.8.36.3@sha256:d426d2f612e1e189c90f9a3f8dcd85a03c6851273833817a296bb327e63aa7a7
+ARG GRAFANA_IMAGE=dhi.io/grafana:13.3.0-debian13@sha256:0614feea5b3eeb8f21e07c00b11b7654a0247f8cf14471ea68da9cafebae0c63
+ARG GRAFANA_BUILD_IMAGE=dhi.io/grafana:13.3.0-debian13-dev@sha256:e986e8313fadb27d0e5e77da4cc221ad471b05c6a5bbbdbb997e6af13cbaa017
+ARG OPERATOR_IMAGE=dhi.io/clickhouse-operator:0.27.4-debian13@sha256:66ea2715cf30c01f56a1b3b5a69c30b0d7a6bd016234913142a252603fde6cbb
+ARG METRICS_IMAGE=dhi.io/clickhouse-metrics-exporter:0.27.4-debian13@sha256:49cd7faa7838c57a074593c1aa3c04e41db3c383d0dcab338d66e824bf38b63c
+ARG ZOOKEEPER_IMAGE=dhi.io/zookeeper:3.9.6-jre25-debian13@sha256:1aeddf5232c3e0026828adeaa30b08920e4336be5513249d0b912bf7e494dd7b
+ARG KUBECTL_IMAGE=dhi.io/kubectl:1.34.13-debian13@sha256:321a2a15d5f0999185dae50304779264411e2c13f50a6f00eccf1bafc5627652
+ARG SYFT_IMAGE=docker.io/anchore/syft:v1.55.0@sha256:4cc92b64ca74ffca4c94d4c8fcc01f217731375300be14d0b6eeb2e82eaa110a
 
 FROM ${SYFT_IMAGE} AS sbom-tool
 
@@ -21,8 +21,11 @@ COPY . .
 COPY --from=sbom-tool /syft /usr/local/bin/syft
 RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOMAXPROCS=2 make bin theia-manager-bin \
-      VERSION="${VERSION}" GIT_SHA="${VCS_REF}" GOFLAGS="-mod=vendor -p=2 -trimpath" && \
-    syft dir:/theia/bin -o spdx-json=/theia/sbom.spdx.json
+      VERSION="${VERSION}" GIT_SHA="${VCS_REF}" COVERFLAGS="" GOFLAGS="-mod=vendor -p=2 -trimpath" && \
+    CGO_ENABLED=0 go build -mod=vendor -trimpath -o /theia/bin/chown ./cmd/theia-init && \
+    syft /theia/bin/theia-manager -o spdx-json=/theia/sbom-manager.spdx.json && \
+    syft /theia/bin/clickhouse-monitor -o spdx-json=/theia/sbom-monitor.spdx.json && \
+    syft /theia/bin/clickhouse-schema-management -o spdx-json=/theia/sbom-schema.spdx.json
 
 FROM ${STATIC_IMAGE} AS manager
 ARG VERSION
@@ -31,7 +34,7 @@ LABEL org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.source="https://github.com/Scoobed/theia"
 COPY --from=go-build /theia/bin/theia-manager /theia-manager
-COPY --from=go-build /theia/sbom.spdx.json /sbom.spdx.json
+COPY --from=go-build /theia/sbom-manager.spdx.json /sbom.spdx.json
 COPY LICENSE /LICENSE
 ENTRYPOINT ["/theia-manager"]
 
@@ -40,7 +43,7 @@ ARG VERSION
 LABEL org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/Scoobed/theia"
 COPY --from=go-build /theia/bin/clickhouse-monitor /clickhouse-monitor
-COPY --from=go-build /theia/sbom.spdx.json /sbom.spdx.json
+COPY --from=go-build /theia/sbom-monitor.spdx.json /sbom.spdx.json
 COPY LICENSE /LICENSE
 ENTRYPOINT ["/clickhouse-monitor"]
 
@@ -50,13 +53,13 @@ ARG VERSION
 LABEL org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/Scoobed/theia"
 COPY --from=go-build /theia/bin/clickhouse-schema-management /clickhouse-schema-management
-COPY --from=go-build /theia/sbom.spdx.json /sbom.spdx.json
+COPY --from=go-build /theia/sbom-schema.spdx.json /sbom.spdx.json
 COPY LICENSE /LICENSE
 
 FROM ${GRAFANA_BUILD_IMAGE} AS grafana-build
 USER root
 COPY --from=sbom-tool /syft /usr/local/bin/syft
-ARG CLICKHOUSE_DATASOURCE_PLUGIN_VERSION=4.22.1
+ARG CLICKHOUSE_DATASOURCE_PLUGIN_VERSION=4.23.4
 RUN grafana cli --homepath /usr/share/grafana --pluginsDir /opt/grafana/plugins \
       plugins install grafana-clickhouse-datasource "${CLICKHOUSE_DATASOURCE_PLUGIN_VERSION}"
 COPY plugins/grafana-custom-plugins/grafana-sankey-plugin/dist/ /opt/grafana/plugins/theia-grafana-sankey-plugin/
@@ -87,13 +90,28 @@ LABEL org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/Scoobed/theia"
 COPY LICENSE /LICENSE
 
+FROM ${STATIC_IMAGE} AS zookeeper-patches
+ADD --checksum=sha256:1c03ce77b3f2e926c25a952612e372404d80bc88c6c8052bede964804fabd732 https://repo.maven.apache.org/maven2/org/xerial/snappy/snappy-java/1.1.10.12/snappy-java-1.1.10.12.jar /snappy-java-1.1.10.12.jar
+
 FROM ${ZOOKEEPER_IMAGE} AS zookeeper
 ARG VERSION
 LABEL org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/Scoobed/theia"
 COPY LICENSE /LICENSE
+USER 0
+RUN rm /opt/zookeeper/lib/snappy-java-1.1.10.5.jar
+COPY --from=zookeeper-patches --chmod=0644 /snappy-java-1.1.10.12.jar /opt/zookeeper/lib/snappy-java-1.1.10.12.jar
+USER 65532
 
-FROM ${INIT_IMAGE} AS init
+FROM ${STATIC_IMAGE} AS init
+ARG VERSION
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY LICENSE /LICENSE
+COPY --from=go-build /theia/bin/chown /usr/bin/chown
+ENTRYPOINT ["/usr/bin/chown"]
+
+FROM ${KUBECTL_IMAGE} AS kubectl
 ARG VERSION
 LABEL org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/Scoobed/theia"

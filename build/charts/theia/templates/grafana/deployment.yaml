@@ -15,6 +15,10 @@ spec:
       labels:
         app: grafana
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       serviceAccountName: grafana
       {{- with .Values.grafana.priorityClassName }}
       priorityClassName: {{ . }}

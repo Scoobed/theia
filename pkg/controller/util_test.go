@@ -234,7 +234,7 @@ func TestGetSparkJobIds(t *testing.T) {
 	}{
 		{
 			name:             "Failed to read from ClickHouse",
-			tableName:        "mock_name",
+			tableName:        "tadetector",
 			returnedRow:      sqlmock.NewRows([]string{}),
 			expectedErrorMsg: "failed to read from ClickHouse",
 		},
@@ -244,24 +244,37 @@ func TestGetSparkJobIds(t *testing.T) {
 			returnedRow:      sqlmock.NewRows([]string{"id"}).AddRow("mock_id"),
 			expectedErrorMsg: "",
 		},
+		{
+			name:        "Recommendations table",
+			tableName:   "recommendations",
+			returnedRow: sqlmock.NewRows([]string{"id"}).AddRow("mock_id"),
+		},
+		{
+			name:             "Unsupported table",
+			tableName:        "mock_name",
+			expectedErrorMsg: "unsupported job table",
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
 			query := "SELECT DISTINCT id FROM " + tc.tableName + ";"
-			if tc.tableName == "mock_name" {
+			defer db.Close()
+			if tc.name == "Failed to read from ClickHouse" {
 				mock.ExpectQuery(query).WillReturnError(errors.New("mock_error"))
-			} else {
+			} else if tc.name != "Unsupported table" {
 				mock.ExpectQuery(query).WillReturnRows(tc.returnedRow)
 			}
 			var idlist []string
 			idlist, err = GetSparkJobIds(db, tc.tableName)
-			if err != nil {
-				assert.Contains(t, err.Error(), tc.expectedErrorMsg)
+			if tc.expectedErrorMsg != "" {
+				assert.ErrorContains(t, err, tc.expectedErrorMsg)
 			} else {
+				assert.NoError(t, err)
 				assert.EqualValues(t, idlist, []string{"mock_id"})
 			}
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }

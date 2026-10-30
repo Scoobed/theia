@@ -11,7 +11,7 @@ RUN CGO_ENABLED=0 GOFLAGS=-mod=vendor make clickhouse-monitor-plugin
 RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin && \
     syft /theia/bin/clickhouse-monitor -o spdx-json=/theia/sbom.spdx.json
 
-# Minimal scratch image - zero CVEs, no OS packages
+# Minimal scratch runtime; Go dependencies must still be scanned for vulnerabilities.
 FROM scratch
 
 LABEL maintainer="Antrea <projectantrea-dev@googlegroups.com>"

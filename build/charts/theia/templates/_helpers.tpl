@@ -78,6 +78,9 @@
       value: {{ $Chart.Version }}
     - name: CLICKHOUSE_INIT_TIMEOUT
       value: "60"
+    # Existing volumes still need schema migration and idempotent table creation.
+    - name: CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS
+      value: "1"
     - name: DB_URL
       value: "localhost:9000"
     - name: MIGRATE_USERNAME

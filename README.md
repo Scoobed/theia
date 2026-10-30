@@ -12,7 +12,7 @@ among Pods and Services in a Kubernetes cluster.
 |---|---|
 | Kubernetes | >= 1.16 |
 | Antrea | >= 2.6.0 |
-| Go (for building) | 1.26.4 |
+| Go (for building) | >= 1.27.1 (release builder: 1.27.3) |
 | Node.js (for Grafana plugins) | >= 18 |
 | Docker | >= 24.0 |
 | Helm | >= 3.0 |
@@ -27,11 +27,10 @@ helm install antrea antrea/antrea -n kube-system \
   --set featureGates.FlowExporter=true --set flowExporter.enable=true
 ```
 
-### 2. Install ClickHouse Operator
+### 2. ClickHouse Operator
 
-```bash
-kubectl apply -f build/charts/theia/crds/clickhouse-operator-install-bundle.yaml
-```
+The Theia chart installs the latest Altinity operator chart dependency (0.27.4).
+Do not install a second cluster-wide operator separately.
 
 ### 3. Install Flow Aggregator
 
@@ -43,8 +42,12 @@ helm install flow-aggregator antrea/flow-aggregator \
 
 ### 4. Install Theia
 
+First complete [private GHCR image-pull setup](#private-ghcr-image-pulls) and save
+the example Helm values as `values-ghcr.yaml`.
+
 ```bash
-helm install theia build/charts/theia -n flow-visibility --create-namespace
+helm install theia build/charts/theia -n flow-visibility --create-namespace \
+  --values values-ghcr.yaml --wait --timeout 15m
 ```
 
 ### 5. Access Grafana
@@ -61,14 +64,154 @@ All images are hosted on `ghcr.io/scoobed/` with the `theia-` prefix:
 
 | Image | Description |
 |---|---|
-| `theia-grafana:v0.9.0` | Custom Grafana 13.0.2 with all plugins embedded |
-| `theia-manager:v0.9.0` | Theia Manager API server |
-| `theia-clickhouse-server:v0.9.0` | ClickHouse with schema management |
-| `theia-clickhouse-monitor:v0.9.0` | ClickHouse storage monitor |
-| `theia-spark-jobs:v0.9.0` | Spark jobs for policy recommendation |
-| `theia-clickhouse-operator:0.27.0` | Altinity ClickHouse Operator |
-| `theia-metrics-exporter:0.27.0` | ClickHouse metrics exporter |
-| `theia-zookeeper:3.9.5` | ZooKeeper for ClickHouse replication |
+| `theia-grafana:0.9.3` | Hardened Grafana 13.3.0 with embedded plugins |
+| `theia-manager:0.9.3` | Theia Manager on a DHI static runtime |
+| `theia-clickhouse-server:0.9.3` | Upstream ClickHouse 26.8.36.3 with schema management |
+| `theia-clickhouse-monitor:0.9.3` | ClickHouse monitor on a DHI static runtime |
+| `theia-clickhouse-operator:0.9.3` | Hardened Altinity ClickHouse Operator 0.27.4 |
+| `theia-metrics-exporter:0.9.3` | Hardened ClickHouse metrics exporter 0.27.4 |
+| `theia-zookeeper:0.9.3` | Hardened ZooKeeper 3.9.6 |
+| `theia-init:0.9.3` | Minimal ownership helper on a DHI static runtime |
+| `theia-kubectl:0.9.3` | Hardened kubectl for operator CRD hooks |
+
+Release inputs are pinned by digest in `build/images/release.env`.
+ClickHouse is an explicit upstream exception: the available DHI 26.10.2 image
+does not contain the new decoder marker from the Brotli CVE-2026-111497 fix,
+while upstream 26.8.36.3 does. Hardened bases do not eliminate application
+vulnerabilities; scan final images and review embedded libraries as well.
+Spark jobs and Spark Operator are not rebuilt or upgraded in this release:
+the DHI catalog only offers Spark 4.x, incompatible with the current Spark 3.x
+integration without a separately validated migration.
+Grafana and ZooKeeper now use UID/GID 65532. Back up existing persistent data
+and validate volume ownership before upgrading a running installation.
+The manager runs non-root and logs to stderr with writable ephemeral runtime directories.
+
+### Private GHCR image pulls
+
+The `ghcr.io/scoobed` images and OCI chart are private. Use a GitHub account
+with access to the packages and a personal access token (classic) with
+`read:packages` permission. Authorize the token for organization SSO if required.
+Use read-only credentials for deployments, not the write-enabled publishing token.
+
+Registry authentication has two separate scopes:
+
+- **Kubernetes image pulls:** a `kubernetes.io/dockerconfigjson` Secret must exist
+  in each namespace that runs a Pod. By default, create `ghcr-pull` in
+  `flow-visibility` for Theia, Grafana, ClickHouse, ZooKeeper, and schema hooks,
+  and in `kube-system` for the operator, exporter, and CRD-install hook.
+- **Helm OCI chart pulls:** authenticate the local Helm client separately.
+  `helm registry login` does not create Kubernetes image-pull Secrets.
+
+#### Create the namespace-scoped Secrets
+
+Verify the intended cluster with `kubectl config current-context` first.
+The following Bash example prompts for the token without echoing it, uses a
+temporary Docker configuration containing only GHCR credentials, and sends the
+Secret manifests directly to Kubernetes without printing them. It does not
+copy your normal Docker configuration or DHI credentials.
+
+```bash
+(
+  set -eo pipefail
+  umask 077
+  KUBE_CONTEXT=$(kubectl config current-context)
+  RELEASE_NAMESPACE=flow-visibility
+  OPERATOR_NAMESPACE=kube-system
+  DOCKER_CONFIG=$(mktemp -d)
+  export DOCKER_CONFIG
+  trap 'unset GHCR_TOKEN; rm -f -- "$DOCKER_CONFIG/config.json"; rmdir -- "$DOCKER_CONFIG"' EXIT
+  # A registry entry prevents automatic selection of a host credential helper.
+  printf '{"auths":{"ghcr.io":{}}}\n' > "$DOCKER_CONFIG/config.json"
+
+  read -r -p 'GitHub username: ' GHCR_USER
+  read -r -s -p 'GitHub token with read:packages: ' GHCR_TOKEN
+  printf '\n'
+  printf '%s' "$GHCR_TOKEN" |
+    docker login ghcr.io --username "$GHCR_USER" --password-stdin
+  unset GHCR_TOKEN
+
+  for namespace in "$RELEASE_NAMESPACE" "$OPERATOR_NAMESPACE"; do
+    kubectl --context="$KUBE_CONTEXT" create namespace "$namespace" \
+      --dry-run=client -o yaml |
+      kubectl --context="$KUBE_CONTEXT" apply -f -
+    kubectl --context="$KUBE_CONTEXT" -n "$namespace" create secret generic ghcr-pull \
+      --type=kubernetes.io/dockerconfigjson \
+      --from-file=".dockerconfigjson=$DOCKER_CONFIG/config.json" \
+      --dry-run=client -o yaml |
+      kubectl --context="$KUBE_CONTEXT" -n "$namespace" apply -f -
+  done
+)
+```
+
+If you change the release namespace or `altinity-clickhouse-operator.namespaceOverride`,
+change the namespaces above as well. An empty `namespaceOverride` places the
+operator in the release namespace; only one Secret is then needed.
+Do not commit tokens, Docker credential files, or generated Secret manifests.
+
+#### Configure Helm values
+
+Save this configuration as `values-ghcr.yaml`. It contains Secret names only
+and is safe to keep with your deployment configuration. All three lists are
+required because the operator subchart and its CRD hook have separate settings:
+
+```yaml
+imagePullSecrets:
+  - name: ghcr-pull
+altinity-clickhouse-operator:
+  imagePullSecrets:
+    - name: ghcr-pull
+  crdHook:
+    imagePullSecrets:
+      - name: ghcr-pull
+```
+
+#### Authenticate Helm and deploy
+
+Authenticate interactively using the same read-only token as the password:
+
+```bash
+helm registry login ghcr.io --username scoobed
+```
+
+Use your own authorized GitHub username if different. Install from GHCR with
+the Secret references and a timeout that allows initial schema reconciliation:
+
+```bash
+helm upgrade --install theia oci://ghcr.io/scoobed/charts/theia \
+  --version 0.9.3 --namespace flow-visibility --create-namespace \
+  --values values-ghcr.yaml --wait --timeout 15m
+```
+
+For an existing installation, back up persistent data and include your existing
+storage and application values files too. Setting pull Secrets does not replace
+the need to preserve those values during an upgrade.
+
+#### Verify access and rotate credentials
+
+Check Secret metadata and Pod events without printing credential data:
+
+```bash
+kubectl -n flow-visibility get secret ghcr-pull
+kubectl -n kube-system get secret ghcr-pull
+kubectl -n flow-visibility get pods
+kubectl -n kube-system get pods -l app.kubernetes.io/instance=theia
+kubectl -n flow-visibility get events --field-selector=type=Warning
+kubectl -n kube-system get events --field-selector=type=Warning
+```
+
+`FailedToRetrieveImagePullSecret` usually means a missing Secret or wrong
+namespace/name. For `ErrImagePull` or `ImagePullBackOff`, inspect the Pod events:
+`unauthorized` or `denied` indicates expired credentials, missing `read:packages`
+permission, or missing package/SSO access. A missing image tag is a separate
+problem. Successfully pulling the OCI chart does not prove that kubelets can
+pull its images.
+
+To rotate credentials, rerun the Secret-creation example with the new token in
+every affected namespace and re-authenticate Helm. Verify a subsequent image
+pull before revoking the old token; already-running containers do not test
+whether replacement credentials work.
+
+### Grafana plugins
 
 The Grafana image is fully immutable — all plugins are pre-installed and no
 internet access is required at pod startup:
@@ -83,14 +226,22 @@ internet access is required at pod startup:
 ### Go Images
 
 ```bash
-# Build all Go-based Docker images
+# Authenticate to Docker Hardened Images and build all nine release images
+docker login dhi.io
 make docker-images
 
 # Build individual images
 make clickhouse-monitor
 make theia-manager
 make clickhouse-server
-make spark-jobs
+# Validate rendered images, then scan final images against CISA KEV
+python3 hack/test-release-chart.py
+python3 hack/scan-release-images.py
+
+# After runtime validation, use an attestation-capable publisher.
+# Creating this builder does not switch your active Docker builder.
+docker buildx create --name theia-publisher --driver docker-container --bootstrap
+BUILDX_BUILDER=theia-publisher make release-images-push
 ```
 
 ### Grafana Image
@@ -109,7 +260,10 @@ done
 make theia-grafana
 ```
 
-### Upstream Images
+### Legacy Upstream Images
+
+The following legacy targets do not use the hardened release configuration.
+Use `make release-images` for the current release instead.
 
 Pull and retag upstream images to `ghcr.io/scoobed/theia-*`:
 

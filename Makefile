@@ -3,6 +3,7 @@ SHELL                 := /bin/bash
 GO                    ?= go
 LDFLAGS               :=
 GOFLAGS               :=
+COVERFLAGS            ?= -cover
 BINDIR                ?= $(CURDIR)/bin
 GO_FILES              := $(shell find . -type d -name '.cache' -prune -o -type f -name '*.go' -print)
 GOPATH                ?= $$($(GO) env GOPATH)
@@ -20,6 +21,7 @@ SPARK_OPERATOR_TAG  ?=
 ZOOKEEPER_TAG       ?=
 
 GOLANGCI_LINT_VERSION := v2.14.0
+GOLANGCI_LINT_ARGS    ?=
 GOLANGCI_LINT_BINDIR  := $(CURDIR)/.golangci-bin
 GOLANGCI_LINT_BIN     := $(GOLANGCI_LINT_BINDIR)/$(GOLANGCI_LINT_VERSION)/golangci-lint
 
@@ -135,7 +137,7 @@ $(GOLANGCI_LINT_BIN):
 .PHONY: golangci
 golangci: $(GOLANGCI_LINT_BIN)
 	@echo "===> Running golangci (linux) <==="
-	@GOOS=linux $(GOLANGCI_LINT_BIN) run -c $(CURDIR)/.golangci.yml
+	@GOOS=linux $(GOLANGCI_LINT_BIN) run -c $(CURDIR)/.golangci.yml $(GOLANGCI_LINT_ARGS)
 
 .PHONY: golangci-fix
 golangci-fix: $(GOLANGCI_LINT_BIN)
@@ -190,36 +192,29 @@ spelling-fix:
 
 .PHONY: clickhouse-monitor
 clickhouse-monitor:
-	@echo "===> Building antrea/theia-clickhouse-monitor Docker image <==="
-	docker build --pull -t antrea/theia-clickhouse-monitor:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.clickhouse-monitor.ubuntu $(DOCKER_BUILD_ARGS) .
-	docker tag antrea/theia-clickhouse-monitor:$(DOCKER_IMG_VERSION) antrea/theia-clickhouse-monitor
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) bash hack/build-release-images.sh build monitor
 
 .PHONY: clickhouse-monitor-plugin
 clickhouse-monitor-plugin:
 	@mkdir -p $(BINDIR)
-	GOOS=linux $(GO) build -o $(BINDIR) $(GOFLAGS) -cover -ldflags '$(LDFLAGS)' antrea.io/theia/plugins/clickhouse-monitor
+	GOOS=linux $(GO) build -o $(BINDIR) $(GOFLAGS) $(COVERFLAGS) -ldflags '$(LDFLAGS)' antrea.io/theia/plugins/clickhouse-monitor
 
 .PHONY: theia-manager
 theia-manager:
-	@echo "===> Building antrea/theia-manager Docker image <==="
-	docker build --pull -t antrea/theia-manager:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.theia-manager.ubuntu $(DOCKER_BUILD_ARGS) .
-	docker tag antrea/theia-manager:$(DOCKER_IMG_VERSION) antrea/theia-manager
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) bash hack/build-release-images.sh build manager
 
 .PHONY: theia-manager-bin
 theia-manager-bin:
 	@mkdir -p $(BINDIR)
-	GOOS=linux $(GO) build -o $(BINDIR) $(GOFLAGS) -cover -ldflags '$(LDFLAGS)' antrea.io/theia/cmd/theia-manager
+	GOOS=linux $(GO) build -o $(BINDIR) $(GOFLAGS) $(COVERFLAGS) -ldflags '$(LDFLAGS)' antrea.io/theia/cmd/theia-manager
 
 .PHONY: clickhouse-server
 clickhouse-server:
-	@echo "===> Building antrea/theia-clickhouse-server Docker image <==="
-	docker build --pull -t antrea/theia-clickhouse-server:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.clickhouse-server.ubuntu $(DOCKER_BUILD_ARGS) .
-	docker tag antrea/theia-clickhouse-server:$(DOCKER_IMG_VERSION) antrea/theia-clickhouse-server
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) bash hack/build-release-images.sh build clickhouse
 
 .PHONY: clickhouse-server-multi-arch
 clickhouse-server-multi-arch:
-	@echo "===> Building antrea/theia-clickhouse-server Docker image <==="
-	docker buildx build --platform=linux/amd64,linux/arm64 --push --pull -t antrea/theia-clickhouse-server:$(VERSION) -f build/images/Dockerfile.clickhouse-server.ubuntu $(DOCKER_BUILD_ARGS) .
+	PLATFORM=linux/amd64,linux/arm64 DOCKER_REGISTRY=$(DOCKER_REGISTRY) bash hack/build-release-images.sh push clickhouse
 
 .PHONY: clickhouse-schema-management-plugin
 clickhouse-schema-management-plugin:
@@ -236,12 +231,10 @@ spark-jobs:
 
 .PHONY: theia-grafana
 theia-grafana:
-	@echo "===> Building antrea/theia-grafana Docker image <==="
-	docker build --pull -t antrea/theia-grafana:$(DOCKER_IMG_VERSION) -f build/images/Dockerfile.grafana .
-	docker tag antrea/theia-grafana:$(DOCKER_IMG_VERSION) antrea/theia-grafana
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) bash hack/build-release-images.sh build grafana
 
 .PHONY: docker-images
-docker-images: clickhouse-monitor clickhouse-server theia-manager spark-jobs theia-grafana
+docker-images: release-images
 
 # Targets to pull, retag, and push upstream images to ghcr.io/scoobed.
 # Mirrors the docker_update_theia.yml workflow.

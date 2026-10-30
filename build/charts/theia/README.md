@@ -14,6 +14,20 @@ Antrea Network Flow Visibility
 
 Kubernetes: `>= 1.16.0-0`
 
+## Private registry authentication
+
+The 0.9.3 images and OCI chart at `ghcr.io/scoobed` require authentication.
+Create a `kubernetes.io/dockerconfigjson` Secret in the release namespace and
+the operator namespace (`kube-system` by default). Configure `imagePullSecrets`,
+`altinity-clickhouse-operator.imagePullSecrets`, and
+`altinity-clickhouse-operator.crdHook.imagePullSecrets`; Helm registry login alone
+does not authenticate Kubernetes image pulls.
+
+See the [GHCR pull-secret setup guide](../../../README.md#private-ghcr-image-pulls)
+for token permissions, credential-safe Secret creation, example values, OCI
+installation, troubleshooting, and rotation. Allow `--timeout 15m` for schema
+initialization, and preserve existing storage/application values when upgrading.
+
 ## Values
 
 | Key | Type | Default | Description |

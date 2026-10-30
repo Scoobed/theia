@@ -1,0 +1,84 @@
+name: Hardened Theia release to GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish versioned images and OCI chart after checks
+        type: boolean
+        default: false
+  push:
+    tags:
+      - 'v0.9.*'
+      - '0.9.*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    if: github.repository == 'Scoobed/theia'
+    runs-on: ubuntu-latest
+    env:
+      GOFLAGS: -mod=vendor -p=2
+      GOMAXPROCS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: azure/setup-helm@v4.3.0
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DHI_USERNAME }}
+          password: ${{ secrets.DHI_TOKEN }}
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify version and test source
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            test "${GITHUB_REF_NAME#v}" = "$(sed 's/^v//' VERSION)"
+          fi
+          make test-unit
+          # Report the existing lint backlog, but block release on new findings.
+          make golangci || true
+          make golangci GOLANGCI_LINT_ARGS="--new-from-rev=HEAD~1"
+          helm lint build/charts/theia
+          python -m pip install PyYAML
+          python hack/test-release-chart.py
+      - name: Build Grafana plugin distributions
+        run: |
+          corepack enable
+          for plugin in grafana-sankey-plugin grafana-chord-plugin grafana-dependency-plugin; do
+            yarn --cwd "plugins/grafana-custom-plugins/$plugin" install --frozen-lockfile
+            yarn --cwd "plugins/grafana-custom-plugins/$plugin" build
+          done
+      - name: Build release images
+        run: make release-images
+      - name: Install vulnerability scanner
+        uses: aquasecurity/setup-trivy@v0.2.6
+        with:
+          version: v0.76.0
+      - name: Scan final images against current KEV catalog
+        run: python hack/scan-release-images.py
+      - name: Publish images with SBOMs and provenance, and OCI chart
+        if: github.event_name == 'push' || inputs.publish
+        run: |
+          make release-images-push
+          mkdir -p /tmp/theia-chart
+          helm package build/charts/theia --destination /tmp/theia-chart
+          helm push "/tmp/theia-chart/theia-$(sed 's/^v//' VERSION).tgz" oci://ghcr.io/scoobed/charts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-vulnerability-reports
+          path: /tmp/theia-release-scans/

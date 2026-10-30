@@ -53,10 +53,12 @@ func main() {
 	clickhouseMigrate, err := initMigration()
 	if err != nil {
 		klog.ErrorS(err, "Error when initializing migration")
+		os.Exit(1)
 	}
 	defer clickhouseMigrate.Close()
 	if err := startMigration(clickhouseMigrate); err != nil {
 		klog.ErrorS(err, "Error when migrating")
+		os.Exit(1)
 	}
 }
 
@@ -116,7 +118,7 @@ func startMigration(clickhouseMigrate *migrate.Migrate) error {
 }
 
 func copyMigrators() error {
-	if err := mkdirAll(migratorPersistentPath, os.ModeDir); err != nil {
+	if err := mkdirAll(migratorPersistentPath, 0750); err != nil {
 		return fmt.Errorf("error when creating folder: %s, error: %v", migratorPersistentPath, err)
 	}
 	// Not sanitize migratorTmpPath and migratorPersistentPath as they are constant.
