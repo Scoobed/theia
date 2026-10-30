@@ -1,0 +1,13 @@
+.git
+.cache
+.coverage
+.golangci-bin
+.docker
+.kube
+.env
+.env.*
+bin
+vendor/**/.git
+build/charts
+charts
+**/node_modules

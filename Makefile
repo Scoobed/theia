@@ -247,6 +247,13 @@ docker-images: clickhouse-monitor clickhouse-server theia-manager spark-jobs the
 # Mirrors the docker_update_theia.yml workflow.
 DOCKER_REGISTRY ?= ghcr.io/scoobed
 
+.PHONY: release-images release-images-push
+release-images:
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) bash hack/build-release-images.sh build
+
+release-images-push:
+	DOCKER_REGISTRY=$(DOCKER_REGISTRY) bash hack/build-release-images.sh push
+
 # Each pull-and-retag target now builds a thin wrapper image that adds
 # /sbom.spdx.json (syft SPDX) and /LICENSE to the upstream image instead
 # of doing a bare docker pull + docker tag.

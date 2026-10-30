@@ -1,0 +1,100 @@
+# syntax=docker/dockerfile:1
+# Inputs are supplied from release.env by hack/build-release-images.sh.
+ARG GO_IMAGE
+ARG STATIC_IMAGE
+ARG CLICKHOUSE_IMAGE
+ARG GRAFANA_IMAGE
+ARG GRAFANA_BUILD_IMAGE
+ARG OPERATOR_IMAGE
+ARG METRICS_IMAGE
+ARG ZOOKEEPER_IMAGE
+ARG INIT_IMAGE
+ARG SYFT_IMAGE
+
+FROM ${SYFT_IMAGE} AS sbom-tool
+
+FROM ${GO_IMAGE} AS go-build
+ARG VERSION
+ARG VCS_REF
+WORKDIR /theia
+COPY . .
+COPY --from=sbom-tool /syft /usr/local/bin/syft
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOMAXPROCS=2 make bin theia-manager-bin \
+      VERSION="${VERSION}" GIT_SHA="${VCS_REF}" GOFLAGS="-mod=vendor -p=2 -trimpath" && \
+    syft dir:/theia/bin -o spdx-json=/theia/sbom.spdx.json
+
+FROM ${STATIC_IMAGE} AS manager
+ARG VERSION
+ARG VCS_REF
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY --from=go-build /theia/bin/theia-manager /theia-manager
+COPY --from=go-build /theia/sbom.spdx.json /sbom.spdx.json
+COPY LICENSE /LICENSE
+ENTRYPOINT ["/theia-manager"]
+
+FROM ${STATIC_IMAGE} AS monitor
+ARG VERSION
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY --from=go-build /theia/bin/clickhouse-monitor /clickhouse-monitor
+COPY --from=go-build /theia/sbom.spdx.json /sbom.spdx.json
+COPY LICENSE /LICENSE
+ENTRYPOINT ["/clickhouse-monitor"]
+
+# Upstream exception preserves the supported 26.8 LTS line and shell init hooks.
+FROM ${CLICKHOUSE_IMAGE} AS clickhouse
+ARG VERSION
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY --from=go-build /theia/bin/clickhouse-schema-management /clickhouse-schema-management
+COPY --from=go-build /theia/sbom.spdx.json /sbom.spdx.json
+COPY LICENSE /LICENSE
+
+FROM ${GRAFANA_BUILD_IMAGE} AS grafana-build
+USER root
+COPY --from=sbom-tool /syft /usr/local/bin/syft
+ARG CLICKHOUSE_DATASOURCE_PLUGIN_VERSION=4.22.1
+RUN grafana cli --homepath /usr/share/grafana --pluginsDir /opt/grafana/plugins \
+      plugins install grafana-clickhouse-datasource "${CLICKHOUSE_DATASOURCE_PLUGIN_VERSION}"
+COPY plugins/grafana-custom-plugins/grafana-sankey-plugin/dist/ /opt/grafana/plugins/theia-grafana-sankey-plugin/
+COPY plugins/grafana-custom-plugins/grafana-chord-plugin/dist/ /opt/grafana/plugins/theia-grafana-chord-plugin/
+COPY plugins/grafana-custom-plugins/grafana-dependency-plugin/dist/ /opt/grafana/plugins/theia-grafana-dependency-plugin/
+RUN syft dir:/opt/grafana/plugins -o spdx-json=/sbom.spdx.json
+
+FROM ${GRAFANA_IMAGE} AS grafana
+ARG VERSION
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY --from=grafana-build --chown=65532:65532 /opt/grafana/plugins /opt/grafana/plugins
+COPY --from=grafana-build /sbom.spdx.json /sbom.spdx.json
+COPY LICENSE /LICENSE
+ENV GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=theia-grafana-sankey-plugin,theia-grafana-chord-plugin,theia-grafana-dependency-plugin
+# DHI does not process the upstream GF_PATHS_* entrypoint variables.
+ENTRYPOINT ["grafana", "server", "--homepath=/usr/share/grafana", "--config=/etc/grafana/grafana.ini", "--packaging=docker", "cfg:default.log.mode=console", "cfg:default.paths.data=/var/lib/grafana", "cfg:default.paths.logs=/var/log/grafana", "cfg:default.paths.plugins=/opt/grafana/plugins", "cfg:default.paths.provisioning=/etc/grafana/provisioning"]
+
+FROM ${OPERATOR_IMAGE} AS operator
+ARG VERSION
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY LICENSE /LICENSE
+
+FROM ${METRICS_IMAGE} AS metrics
+ARG VERSION
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY LICENSE /LICENSE
+
+FROM ${ZOOKEEPER_IMAGE} AS zookeeper
+ARG VERSION
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY LICENSE /LICENSE
+
+FROM ${INIT_IMAGE} AS init
+ARG VERSION
+LABEL org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.source="https://github.com/Scoobed/theia"
+COPY LICENSE /LICENSE

@@ -36,7 +36,7 @@ spec:
           command:
             - chown
             - -R
-            - "{{ .Values.grafana.securityContext.runAsUser | default 472 }}:{{ .Values.grafana.securityContext.fsGroup | default 472 }}"
+            - "{{ .Values.grafana.securityContext.runAsUser | default 65532 }}:{{ .Values.grafana.securityContext.fsGroup | default 65532 }}"
             - /var/lib/grafana
           volumeMounts:
           - mountPath: /var/lib/grafana

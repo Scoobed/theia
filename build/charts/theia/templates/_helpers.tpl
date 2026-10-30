@@ -145,7 +145,7 @@
 {{- else if eq $Chart.AppVersion "latest" }}
 {{- print "latest" -}}
 {{- else }}
-{{- print "v" $Chart.AppVersion -}}
+{{- trimPrefix "v" $Chart.AppVersion -}}
 {{- end }}
 {{- end -}}
 
@@ -164,7 +164,7 @@
 {{- else if eq .Chart.AppVersion "latest" }}
 {{- print "latest" -}}
 {{- else }}
-{{- print "v" .Chart.AppVersion -}}
+{{- trimPrefix "v" .Chart.AppVersion -}}
 {{- end }}
 {{- end -}}
 
