@@ -64,23 +64,24 @@ All images are hosted on `ghcr.io/scoobed/` with the `theia-` prefix:
 
 | Image | Description |
 |---|---|
-| `theia-grafana:0.9.3` | Hardened Grafana 13.3.0 with embedded plugins |
-| `theia-manager:0.9.3` | Theia Manager on a DHI static runtime |
-| `theia-clickhouse-server:0.9.3` | Upstream ClickHouse 26.10.3.7 with schema management |
-| `theia-clickhouse-monitor:0.9.3` | ClickHouse monitor on a DHI static runtime |
-| `theia-clickhouse-operator:0.9.3` | Hardened Altinity ClickHouse Operator 0.27.4 |
-| `theia-metrics-exporter:0.9.3` | Hardened ClickHouse metrics exporter 0.27.4 |
-| `theia-zookeeper:0.9.3` | Hardened ZooKeeper 3.9.6 |
-| `theia-init:0.9.3` | Minimal ownership helper on a DHI static runtime |
-| `theia-kubectl:0.9.3` | Hardened kubectl for operator CRD hooks |
+| `theia-grafana:0.9.4` | Hardened Grafana 13.3.0 with embedded plugins |
+| `theia-manager:0.9.4` | Theia Manager on a DHI static runtime |
+| `theia-clickhouse-server:0.9.4` | Upstream ClickHouse 26.10.3.7 with schema management |
+| `theia-clickhouse-monitor:0.9.4` | ClickHouse monitor on a DHI static runtime |
+| `theia-clickhouse-operator:0.9.4` | Hardened Altinity ClickHouse Operator 0.27.4 |
+| `theia-metrics-exporter:0.9.4` | Hardened ClickHouse metrics exporter 0.27.4 |
+| `theia-zookeeper:0.9.4` | Hardened ZooKeeper 3.9.6 |
+| `theia-init:0.9.4` | Minimal ownership helper on a DHI static runtime |
+| `theia-kubectl:0.9.4` | Hardened kubectl for operator CRD hooks |
 
 Release inputs are pinned by digest in `build/images/release.env`.
 ClickHouse is an explicit upstream exception: the available DHI 26.10.2 image
 does not contain the new decoder marker from the Brotli CVE-2026-111497 fix,
 while upstream 26.10.3.7 does. Hardened bases do not eliminate application
 vulnerabilities; scan final images and review embedded libraries as well.
-The ClickHouse `0.9.3` tag was explicitly authorized for replacement with
-26.10.3.7; the chart and all other component tags remain unchanged. A node
+Release `0.9.4` uses new image and chart tags, preserving existing `0.9.3`
+artifacts. The earlier ClickHouse `0.9.3` tag was explicitly replaced with
+26.10.3.7 before this release. A node
 that cached the previous image under `IfNotPresent` will not automatically
 download its replacement. For any later rollout, pin the verified image digest
 or explicitly pull the replacement (for example, use `clickhouse.image.pullPolicy=Always`)
@@ -108,8 +109,12 @@ old and new UIDs writing the same volume; restore the desired replica count
 afterward. Do not add the signed ClickHouse plugin to the unsigned
 allowlist to work around a temporary-file permission failure.
 
+The chart deploys one Grafana replica with a `Recreate` update strategy.
+Upgrades briefly stop Grafana before starting its replacement, preventing
+SQLite/Bleve lock failures from two processes sharing the same data PVC.
+
 Check a locally rebuilt image with
-`python3 hack/test-grafana-image-permissions.py theia-grafana-uid101:local`.
+`python3 hack/test-grafana-image-permissions.py ghcr.io/scoobed/theia-grafana:0.9.4`.
 
 ### Private GHCR image pulls
 
@@ -203,7 +208,7 @@ the Secret references and a timeout that allows initial schema reconciliation:
 
 ```bash
 helm upgrade --install theia oci://ghcr.io/scoobed/charts/theia \
-  --version 0.9.3 --namespace flow-visibility --create-namespace \
+  --version 0.9.4 --namespace flow-visibility --create-namespace \
   --values values-ghcr.yaml --wait --timeout 15m
 ```
 
@@ -238,13 +243,18 @@ whether replacement credentials work.
 
 ### Grafana plugins
 
-The Grafana image is fully immutable — all plugins are pre-installed and no
-internet access is required at pod startup:
+The required Theia and ClickHouse plugins are embedded in the Grafana image;
+using these plugins does not require runtime installation:
 
 - `theia-grafana-sankey-plugin` v2.0.0 — Sankey flow diagrams (d3-sankey)
 - `theia-grafana-chord-plugin` v2.0.0 — Chord network diagrams (d3)
 - `theia-grafana-dependency-plugin` v2.0.0 — Dependency graphs (mermaid)
 - `grafana-clickhouse-datasource` — ClickHouse data source
+
+This does not disable Grafana's optional online catalog/update requests, and
+some logo references remain external. See the
+[0.9.4 release notes](CHANGELOG/CHANGELOG-0.9.md) for validation scope, known
+security findings, and offline-operation limitations.
 
 ## Building
 
@@ -335,6 +345,7 @@ Antrea Agent (Flow Exporter)
 
 ## Documentation
 
+- [0.9.4 Release Notes](CHANGELOG/CHANGELOG-0.9.md)
 - [Getting Started Guide](docs/getting-started.md)
 - [Network Flow Visibility](docs/network-flow-visibility.md)
 - [NetworkPolicy Recommendation](docs/networkpolicy-recommendation.md)

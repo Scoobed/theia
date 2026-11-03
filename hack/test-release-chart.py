@@ -75,7 +75,11 @@ assert schema_job["metadata"]["annotations"]["helm.sh/hook"] == "post-install,po
 subprocess.run(["bash", "-n"],
                input=schema_job["spec"]["template"]["spec"]["containers"][0]["command"][-1],
                text=True, check=True)
-grafana = find(docs, "Deployment", "grafana")["spec"]["template"]["spec"]
+grafana_deployment = find(docs, "Deployment", "grafana")
+assert grafana_deployment["spec"]["replicas"] == 1
+assert grafana_deployment["spec"]["strategy"]["type"] == "Recreate"
+assert grafana_deployment["spec"]["strategy"]["rollingUpdate"] is None
+grafana = grafana_deployment["spec"]["template"]["spec"]
 assert grafana["securityContext"]["runAsUser"] == 65532
 assert grafana["initContainers"][0]["command"][2] == "65532:65532"
 ds = datasource(docs)
@@ -137,12 +141,13 @@ with tempfile.TemporaryDirectory(prefix="theia-chart-metadata-") as folder:
     chart = pathlib.Path(folder) / "theia"
     shutil.copytree(CHART, chart)
     metadata = yaml.safe_load((chart / "Chart.yaml").read_text())
-    metadata["version"] = "0.9.3+b36edc5f0ba6"
-    (chart / "Chart.yaml").write_text(yaml.safe_dump(metadata, sort_keys=False))
-    rendered = render("--set", "clickhouse.cluster.replicas=2", chart=chart)
-    chi = find(rendered, "ClickHouseInstallation", "clickhouse")
-    for pod in chi["spec"]["templates"]["podTemplates"]:
-        container = next(c for c in pod["spec"]["containers"] if c["name"] == "clickhouse")
-        target = next(e["value"] for e in container["env"] if e["name"] == "THEIA_VERSION")
-        assert target == "0.9.3", target
+    for packaged_version in ("0.9.3+b36edc5f0ba6", metadata["version"] + "+release.1"):
+        metadata["version"] = packaged_version
+        (chart / "Chart.yaml").write_text(yaml.safe_dump(metadata, sort_keys=False))
+        rendered = render("--set", "clickhouse.cluster.replicas=2", chart=chart)
+        chi = find(rendered, "ClickHouseInstallation", "clickhouse")
+        for pod in chi["spec"]["templates"]["podTemplates"]:
+            container = next(c for c in pod["spec"]["containers"] if c["name"] == "clickhouse")
+            target = next(e["value"] for e in container["env"] if e["name"] == "THEIA_VERSION")
+            assert target == packaged_version.split("+", 1)[0], target
 print("Release chart regression checks passed (image tags, datasource provisioning, rollout checksums, storage, TLS, replicas, and migration build metadata).")

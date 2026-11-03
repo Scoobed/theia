@@ -7,6 +7,11 @@ metadata:
   name: grafana
   namespace: {{ .Release.Namespace }}
 spec:
+  replicas: 1
+  # The shared SQLite/Bleve PVC requires a single writer during upgrades.
+  strategy:
+    type: Recreate
+    rollingUpdate: null
   selector:
     matchLabels:
       app: grafana

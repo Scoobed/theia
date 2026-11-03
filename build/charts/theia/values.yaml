@@ -29,7 +29,7 @@ altinity-clickhouse-operator:
     imagePullSecrets: []
     image:
       repository: "ghcr.io/scoobed/theia-kubectl"
-      tag: "0.9.3"
+      tag: "0.9.4"
       pullPolicy: "IfNotPresent"
   rbac:
     # -- Use cluster-scoped ClusterRole/ClusterRoleBinding (false) or
@@ -45,13 +45,13 @@ altinity-clickhouse-operator:
       # -- Container image repository for the ClickHouse Operator.
       repository: "ghcr.io/scoobed/theia-clickhouse-operator"
       # -- Container image tag for the ClickHouse Operator.
-      tag: "0.9.3"
+      tag: "0.9.4"
   metrics:
     image:
       # -- Container image repository for the ClickHouse Metrics Exporter.
       repository: "ghcr.io/scoobed/theia-metrics-exporter"
       # -- Container image tag for the ClickHouse Metrics Exporter.
-      tag: "0.9.3"
+      tag: "0.9.4"
 clickhouse:
   # -- Wait for operator reconciliation and initialized distributed tables.
   schemaCheck:
@@ -61,7 +61,7 @@ clickhouse:
   image: 
     repository: "ghcr.io/scoobed/theia-clickhouse-server"
     pullPolicy: "IfNotPresent"
-    tag: "0.9.3"
+    tag: "0.9.4"
   # -- Set securityContext for the ClickHouse server and monitor Pods. Leave
   # empty (the default) to run as the image's default user (normally root,
   # which the container needs in order to chown /var/lib/clickhouse on
@@ -105,7 +105,7 @@ clickhouse:
     image:
       repository: "ghcr.io/scoobed/theia-clickhouse-monitor"
       pullPolicy: "IfNotPresent"
-      tag: "0.9.3"
+      tag: "0.9.4"
     # -- Resource requests/limits for the ClickHouse Monitor container.
     resources: {}
   # -- Credentials to connect to ClickHouse. They will be stored in a secret.
@@ -223,7 +223,7 @@ clickhouse:
       image:
         repository: "ghcr.io/scoobed/theia-zookeeper"
         pullPolicy: "IfNotPresent"
-        tag: "0.9.3"
+        tag: "0.9.4"
       # -- Set securityContext.
       # Use a specific uid, gid for zookeeper.
       securityContext:
@@ -249,7 +249,7 @@ clickhouse:
         # -- Hardened helper with chown; kept separate from the Java runtime.
         image:
           repository: "ghcr.io/scoobed/theia-init"
-          tag: "0.9.3"
+          tag: "0.9.4"
           pullPolicy: "IfNotPresent"
         # -- Resource requests/limits for the init-chown-data container.
         resources: {}
@@ -349,7 +349,7 @@ grafana:
     enable: true
     image:
       repository: "ghcr.io/scoobed/theia-init"
-      tag: "0.9.3"
+      tag: "0.9.4"
       pullPolicy: "IfNotPresent"
     # -- Resource requests/limits for the init-chown-data container.
     resources: {}
@@ -357,7 +357,7 @@ grafana:
   image: 
     repository: "ghcr.io/scoobed/theia-grafana"
     pullPolicy: "IfNotPresent"
-    tag: "0.9.3"
+    tag: "0.9.4"
   # -- Credentials to login to Grafana. They will be stored in a Secret.
   loginSecret:
     username: "admin"
@@ -453,7 +453,7 @@ theiaManager:
   image:
     repository: "ghcr.io/scoobed/theia-manager"
     pullPolicy: "IfNotPresent"
-    tag: ""
+    tag: "0.9.4"
   # -- Pod priorityClassName for the Theia Manager Pod.
   priorityClassName: ""
   # -- Resource requests/limits for the Theia Manager container.

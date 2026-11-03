@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1
 # Inputs are supplied from release.env by hack/build-release-images.sh.
-ARG GO_IMAGE=dhi.io/golang:1.27.3-debian13-dev@sha256:1a1525863730c4f72323b521df75bb51ac9278d5a2c7e4978dc2884ed4b62439
-ARG STATIC_IMAGE=dhi.io/static:20250419-debian13@sha256:66e3dac42874997512a34ac68b59fa424a261394618b6ba0642454522aef4565
+ARG GO_IMAGE=dhi.io/golang:1.27.3-debian13-dev@sha256:e9fcc13c145dd017570e607d3b3ecbc5347b988e7e0a6852cfa73a2d9804d512
+ARG STATIC_IMAGE=dhi.io/static:20250419-debian13@sha256:4749130e822c145dbdf9ca11ec0cc2f694b5fe687fd74268a2b62160e6726f39
 ARG CLICKHOUSE_IMAGE=docker.io/clickhouse/clickhouse-server:26.10.3.7@sha256:739e099abd1157390960a59e4532d21781d8fde57e6e4151cb920ea02c30b1ce
-ARG GRAFANA_IMAGE=dhi.io/grafana:13.3.0-debian13@sha256:0614feea5b3eeb8f21e07c00b11b7654a0247f8cf14471ea68da9cafebae0c63
-ARG GRAFANA_BUILD_IMAGE=dhi.io/grafana:13.3.0-debian13-dev@sha256:e986e8313fadb27d0e5e77da4cc221ad471b05c6a5bbbdbb997e6af13cbaa017
-ARG OPERATOR_IMAGE=dhi.io/clickhouse-operator:0.27.4-debian13@sha256:66ea2715cf30c01f56a1b3b5a69c30b0d7a6bd016234913142a252603fde6cbb
-ARG METRICS_IMAGE=dhi.io/clickhouse-metrics-exporter:0.27.4-debian13@sha256:49cd7faa7838c57a074593c1aa3c04e41db3c383d0dcab338d66e824bf38b63c
-ARG ZOOKEEPER_IMAGE=dhi.io/zookeeper:3.9.6-jre25-debian13@sha256:1aeddf5232c3e0026828adeaa30b08920e4336be5513249d0b912bf7e494dd7b
-ARG KUBECTL_IMAGE=dhi.io/kubectl:1.34.13-debian13@sha256:321a2a15d5f0999185dae50304779264411e2c13f50a6f00eccf1bafc5627652
+ARG GRAFANA_IMAGE=dhi.io/grafana:13.3.0-debian13@sha256:2a864607cc86bb3e2ca19b28b91fd314aa256317aecc926b6e9676fcaa39b088
+ARG GRAFANA_BUILD_IMAGE=dhi.io/grafana:13.3.0-debian13-dev@sha256:aaf8a932cabf7cd7daa790d1feb245395fa9b1f51e1b31cc425de19def6e4fc5
+ARG OPERATOR_IMAGE=dhi.io/clickhouse-operator:0.27.4-debian13@sha256:8c5c102ea9b8fbdeae8392091e9f3e24241f82b2148532e7e76aee384d0c5e5c
+ARG METRICS_IMAGE=dhi.io/clickhouse-metrics-exporter:0.27.4-debian13@sha256:161eab1dceb6530ed06b5a413bb963dd057edb808c368e88b9685165e2584ac2
+ARG ZOOKEEPER_IMAGE=dhi.io/zookeeper:3.9.6-jre25-debian13@sha256:ac64939cbd41f367632e98dbc313d0d2d91c93f7d25037f7b820201f00065ec6
+ARG KUBECTL_IMAGE=dhi.io/kubectl:1.34.13-debian13@sha256:4ba5d9a10a7ce30b451fce1897c1794f729a898931536de53d1b40fd84ee22ef
 ARG SYFT_IMAGE=docker.io/anchore/syft:v1.55.0@sha256:4cc92b64ca74ffca4c94d4c8fcc01f217731375300be14d0b6eeb2e82eaa110a
 
 FROM ${SYFT_IMAGE} AS sbom-tool
