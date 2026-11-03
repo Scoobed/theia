@@ -2,17 +2,21 @@
 # Copyright 2026 Antrea Authors
 # SPDX-License-Identifier: Apache-2.0
 """Regression checks for release image references and hardened runtime contracts."""
+import json
 import pathlib
+import re
+import shutil
 import subprocess
+import tempfile
 import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CHART = ROOT / "build/charts/theia"
 
 
-def render(*args):
+def render(*args, namespace="flow-visibility", chart=CHART):
     result = subprocess.check_output(
-        ["helm", "template", "theia", str(CHART), "-n", "flow-visibility", *args],
+        ["helm", "template", "theia", str(chart), "-n", namespace, *args],
         text=True,
     )
     return [doc for doc in yaml.safe_load_all(result) if doc]
@@ -32,6 +36,26 @@ def images(value):
 
 def find(docs, kind, name):
     return next(d for d in docs if d["kind"] == kind and d["metadata"]["name"] == name)
+
+def datasource(docs):
+    config = find(docs, "ConfigMap", "grafana-datasource-provider")
+    return yaml.safe_load(config["data"]["datasource_provider.yaml"])["datasources"][0]
+
+
+def datasource_checksum(docs):
+    deployment = find(docs, "Deployment", "grafana")
+    return deployment["spec"]["template"]["metadata"]["annotations"]["checksum/datasource-provisioning"]
+
+
+def check_dashboard_uids(value, uid):
+    if isinstance(value, dict):
+        if value.get("type") == "grafana-clickhouse-datasource":
+            assert value.get("uid") == uid
+        for child in value.values():
+            check_dashboard_uids(child, uid)
+    elif isinstance(value, list):
+        for child in value:
+            check_dashboard_uids(child, uid)
 
 
 docs = render()
@@ -54,6 +78,29 @@ subprocess.run(["bash", "-n"],
 grafana = find(docs, "Deployment", "grafana")["spec"]["template"]["spec"]
 assert grafana["securityContext"]["runAsUser"] == 65532
 assert grafana["initContainers"][0]["command"][2] == "65532:65532"
+ds = datasource(docs)
+assert ds["uid"] == "PDEE91DDB90597936"
+assert ds["jsonData"]["host"] == "clickhouse-clickhouse.flow-visibility.svc"
+assert ds["jsonData"]["port"] == 9000
+assert ds["jsonData"]["protocol"] == "native"
+assert ds["jsonData"]["defaultDatabase"] == "default"
+assert "server" not in ds["jsonData"] and "url" not in ds
+assert ds["jsonData"]["username"] == "$CLICKHOUSE_USERNAME"
+assert ds["secureJsonData"]["password"] == "$CLICKHOUSE_PASSWORD"
+env = {entry["name"]: entry for entry in grafana["containers"][0]["env"]}
+for name, key in (("CLICKHOUSE_USERNAME", "username"), ("CLICKHOUSE_PASSWORD", "password")):
+    assert env[name]["valueFrom"]["secretKeyRef"] == {"name": "clickhouse-secret", "key": key}
+for dashboard in (CHART / "provisioning/dashboards").glob("*.json"):
+    check_dashboard_uids(json.loads(dashboard.read_text()), ds["uid"])
+checksum = datasource_checksum(docs)
+assert re.fullmatch(r"[0-9a-f]{64}", checksum)
+assert datasource_checksum(render()) == checksum
+assert datasource_checksum(render("--set", "grafana.log.level=debug")) == checksum
+assert datasource_checksum(render("--set", "clickhouse.service.tcpPort=19000")) != checksum
+custom = render("--set", "clickhouse.service.tcpPort=19000", namespace="observability")
+assert datasource(custom)["jsonData"]["host"] == "clickhouse-clickhouse.observability.svc"
+assert datasource(custom)["jsonData"]["port"] == 19000
+assert datasource_checksum(custom) != checksum
 zookeeper = find(docs, "StatefulSet", "zookeeper")["spec"]["template"]["spec"]
 assert zookeeper["securityContext"]["runAsUser"] == 65532
 startup = zookeeper["containers"][0]["command"][-1]
@@ -86,4 +133,16 @@ for doc in private:
     if doc["kind"] == "ClickHouseInstallation":
         for pod in doc["spec"]["templates"]["podTemplates"]:
             assert pod["spec"]["imagePullSecrets"] == [{"name": "ghcr-pull"}]
-print("Release chart regression checks passed (9 versioned images, storage, TLS, external ZooKeeper, non-root, replicas, fallback tags).")
+with tempfile.TemporaryDirectory(prefix="theia-chart-metadata-") as folder:
+    chart = pathlib.Path(folder) / "theia"
+    shutil.copytree(CHART, chart)
+    metadata = yaml.safe_load((chart / "Chart.yaml").read_text())
+    metadata["version"] = "0.9.3+b36edc5f0ba6"
+    (chart / "Chart.yaml").write_text(yaml.safe_dump(metadata, sort_keys=False))
+    rendered = render("--set", "clickhouse.cluster.replicas=2", chart=chart)
+    chi = find(rendered, "ClickHouseInstallation", "clickhouse")
+    for pod in chi["spec"]["templates"]["podTemplates"]:
+        container = next(c for c in pod["spec"]["containers"] if c["name"] == "clickhouse")
+        target = next(e["value"] for e in container["env"] if e["name"] == "THEIA_VERSION")
+        assert target == "0.9.3", target
+print("Release chart regression checks passed (image tags, datasource provisioning, rollout checksums, storage, TLS, replicas, and migration build metadata).")

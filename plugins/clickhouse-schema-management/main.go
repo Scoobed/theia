@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/blang/semver"
 	"github.com/golang-migrate/migrate"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
@@ -222,9 +223,15 @@ func getDataVersionNumber(clickhouseMigrate migrate.Migrate) (int, error) {
 }
 
 func getVersionNumber(version string) (int, error) {
+	parsed, err := semver.Parse(version)
+	if err != nil {
+		return 0, fmt.Errorf("error when parsing version %s: %w", version, err)
+	}
+	// Build metadata identifies the package, not a different database schema.
+	parsed.Build = nil
+	version = parsed.String()
 	versionNumber, ok := versionMap[version]
 	if !ok {
-		var err error
 		// In case data schema does not change between version A and B (assuming B is the later version)
 		// we will not have file xxx_A.up.sql and xxx_A.down.sql
 		// In migration, we can treat version A the same as version C,
@@ -252,31 +259,17 @@ func roundUpVersion(version string) (int, error) {
 }
 
 // Return true if version a is earlier than version b.
-// Both versions must be numeric dot-separated strings (e.g. "0.6.0").
-// Returns an error if either version contains non-numeric components.
+// Both versions must be valid SemVer strings. Build metadata has no precedence.
 func versionLessThan(a, b string) (bool, error) {
-	as := strings.Split(a, ".")
-	bs := strings.Split(b, ".")
-	// Compare up to the shorter length
-	maxLen := len(as)
-	if len(bs) < maxLen {
-		maxLen = len(bs)
+	av, err := semver.Parse(a)
+	if err != nil {
+		return false, fmt.Errorf("error when parsing version %s: %w", a, err)
 	}
-	for i := 0; i < maxLen; i++ {
-		xi, err := strconv.Atoi(as[i])
-		if err != nil {
-			return false, fmt.Errorf("error when parsing version %s: %v", a, err)
-		}
-		yi, err := strconv.Atoi(bs[i])
-		if err != nil {
-			return false, fmt.Errorf("error when parsing version %s: %v", b, err)
-		}
-		if xi == yi {
-			continue
-		}
-		return (xi < yi), nil
+	bv, err := semver.Parse(b)
+	if err != nil {
+		return false, fmt.Errorf("error when parsing version %s: %w", b, err)
 	}
-	return false, nil
+	return av.LT(bv), nil
 }
 
 // go-migrate is introduced in Theia v0.3. It cannot distinguish versions before v0.3 automatically.

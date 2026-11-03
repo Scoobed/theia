@@ -14,6 +14,8 @@ spec:
     metadata:
       labels:
         app: grafana
+      annotations:
+        checksum/datasource-provisioning: {{ include (print $.Template.BasePath "/grafana/datasource-provider-configmap.yaml") . | sha256sum | quote }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

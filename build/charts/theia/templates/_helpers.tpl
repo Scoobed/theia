@@ -74,8 +74,9 @@
       mountPath: /var/lib/clickhouse
     {{- end }}
   env:
+    # Chart build metadata must not change the database schema version.
     - name: THEIA_VERSION
-      value: {{ $Chart.Version }}
+      value: {{ $Chart.Version | splitList "+" | first | quote }}
     - name: CLICKHOUSE_INIT_TIMEOUT
       value: "60"
     # Existing volumes still need schema migration and idempotent table creation.

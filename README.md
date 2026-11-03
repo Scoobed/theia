@@ -66,7 +66,7 @@ All images are hosted on `ghcr.io/scoobed/` with the `theia-` prefix:
 |---|---|
 | `theia-grafana:0.9.3` | Hardened Grafana 13.3.0 with embedded plugins |
 | `theia-manager:0.9.3` | Theia Manager on a DHI static runtime |
-| `theia-clickhouse-server:0.9.3` | Upstream ClickHouse 26.8.36.3 with schema management |
+| `theia-clickhouse-server:0.9.3` | Upstream ClickHouse 26.10.3.7 with schema management |
 | `theia-clickhouse-monitor:0.9.3` | ClickHouse monitor on a DHI static runtime |
 | `theia-clickhouse-operator:0.9.3` | Hardened Altinity ClickHouse Operator 0.27.4 |
 | `theia-metrics-exporter:0.9.3` | Hardened ClickHouse metrics exporter 0.27.4 |
@@ -77,14 +77,39 @@ All images are hosted on `ghcr.io/scoobed/` with the `theia-` prefix:
 Release inputs are pinned by digest in `build/images/release.env`.
 ClickHouse is an explicit upstream exception: the available DHI 26.10.2 image
 does not contain the new decoder marker from the Brotli CVE-2026-111497 fix,
-while upstream 26.8.36.3 does. Hardened bases do not eliminate application
+while upstream 26.10.3.7 does. Hardened bases do not eliminate application
 vulnerabilities; scan final images and review embedded libraries as well.
+The ClickHouse `0.9.3` tag was explicitly authorized for replacement with
+26.10.3.7; the chart and all other component tags remain unchanged. A node
+that cached the previous image under `IfNotPresent` will not automatically
+download its replacement. For any later rollout, pin the verified image digest
+or explicitly pull the replacement (for example, use `clickhouse.image.pullPolicy=Always`)
+before recreating Pods. Restarting a Pod alone does not invalidate its image cache.
 Spark jobs and Spark Operator are not rebuilt or upgraded in this release:
 the DHI catalog only offers Spark 4.x, incompatible with the current Spark 3.x
 integration without a separately validated migration.
 Grafana and ZooKeeper now use UID/GID 65532. Back up existing persistent data
 and validate volume ownership before upgrading a running installation.
 The manager runs non-root and logs to stderr with writable ephemeral runtime directories.
+The Grafana image keeps UID/GID 65532 as its default and also supports running
+as `101:101` with fresh image-owned data directories. Plugins are installed
+under `/opt/grafana/plugins`, with readable assets and executable backend
+binaries; `/var/lib/grafana/plugins` is not the configured plugin path.
+`/var/lib/grafana` and `/var/log/grafana` are writable by UID 101 and group
+65532. `/tmp` uses standard root-owned sticky `1777` permissions because
+Grafana's backend plugins create temporary IPC files there.
+For a UID 101 Helm deployment, set `grafana.securityContext.runAsUser`,
+`runAsGroup`, and `fsGroup` to 101 and retain `grafana.initChownData.enable=true`.
+Existing mounted volumes must be owned appropriately; image permissions do
+not override volume ownership, and root-squashed NFS storage may need to be
+prepared externally. When changing UID on an existing SQLite PVC, stop the
+old Grafana pod before ownership migration so a rolling update does not leave
+old and new UIDs writing the same volume; restore the desired replica count
+afterward. Do not add the signed ClickHouse plugin to the unsigned
+allowlist to work around a temporary-file permission failure.
+
+Check a locally rebuilt image with
+`python3 hack/test-grafana-image-permissions.py theia-grafana-uid101:local`.
 
 ### Private GHCR image pulls
 

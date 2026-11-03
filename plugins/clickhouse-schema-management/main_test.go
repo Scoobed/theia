@@ -143,6 +143,83 @@ func TestSchemaManagement(t *testing.T) {
 	checkErrorMsg(t)
 }
 
+func TestTheiaVersionWithBuildMetadata(t *testing.T) {
+	originalVersionMap, originalGetEnv := versionMap, getEnv
+	t.Cleanup(func() {
+		versionMap, getEnv = originalVersionMap, originalGetEnv
+	})
+	versionMap = map[string]int{
+		"0.1.0": 0, "0.3.0": 1, "0.9.0": 8, "0.9.3": 9, "0.10.0": 10,
+	}
+	testCases := []struct {
+		version string
+		want    int
+		wantErr bool
+	}{
+		{version: "0.9.3", want: 9},
+		{version: "0.9.3+b36edc5f0ba6", want: 9},
+		{version: "0.9.3+sha.b36edc5f0ba6", want: 9},
+		{version: "0.1.0+build.1", want: 0},
+		{version: "0.9.2+build.1", want: 9},
+		{version: "0.9.4+build.1", want: 10},
+		{version: "0.9.3-rc.1+build.1", want: 9},
+		{version: "", wantErr: true},
+		{version: "v0.9.3", wantErr: true},
+		{version: "0.9", wantErr: true},
+		{version: "0.9.3+", wantErr: true},
+		{version: "0.9.3+bad_metadata", wantErr: true},
+		{version: "0.9.3+build..1", wantErr: true},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.version, func(t *testing.T) {
+			getEnv = func(key string) string {
+				if key == "THEIA_VERSION" {
+					return tc.version
+				}
+				return ""
+			}
+			got, err := getTheiaVersionNumber()
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestVersionLessThanSemver(t *testing.T) {
+	testCases := []struct {
+		a, b    string
+		want    bool
+		wantErr bool
+	}{
+		{a: "0.9.0", b: "0.9.3+b36edc5f0ba6", want: true},
+		{a: "0.9.3", b: "0.9.3+build.1"},
+		{a: "0.9.3+build.1", b: "0.9.3"},
+		{a: "0.9.3+build.1", b: "0.9.3+build.2"},
+		{a: "0.9.10", b: "0.10.0", want: true},
+		{a: "0.9.3-rc.2", b: "0.9.3-rc.10", want: true},
+		{a: "0.9.3-rc.1+build.1", b: "0.9.3+build.2", want: true},
+		{a: "0.9.3", b: "0.9.3-rc.1"},
+		{a: "v0.9.3", b: "0.9.3", wantErr: true},
+		{a: "0.9.3", b: "0.9.3+", wantErr: true},
+		{a: "0.8.0", b: "0.9.invalid", wantErr: true},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.a+"/"+tc.b, func(t *testing.T) {
+			got, err := versionLessThan(tc.a, tc.b)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func checkMigrations(t *testing.T) {
 	testcases := []struct {
 		name                string
@@ -267,7 +344,7 @@ func checkErrorMsg(t *testing.T) {
 					return fakeGetEnv(key)
 				}
 			},
-			startExpectedErrorMsg: "error when getting Theia version: error when getting theia version number for v0.1.0: error when rounding up version: ",
+			startExpectedErrorMsg: "error when getting Theia version: error when getting theia version number for v0.1.0: error when parsing version v0.1.0: ",
 		},
 	}
 
