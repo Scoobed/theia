@@ -2,7 +2,7 @@
 # Inputs are supplied from release.env by hack/build-release-images.sh.
 ARG GO_IMAGE=dhi.io/golang:1.27.3-debian13-dev@sha256:1a1525863730c4f72323b521df75bb51ac9278d5a2c7e4978dc2884ed4b62439
 ARG STATIC_IMAGE=dhi.io/static:20250419-debian13@sha256:66e3dac42874997512a34ac68b59fa424a261394618b6ba0642454522aef4565
-ARG CLICKHOUSE_IMAGE=docker.io/clickhouse/clickhouse-server:26.8.36.3@sha256:d426d2f612e1e189c90f9a3f8dcd85a03c6851273833817a296bb327e63aa7a7
+ARG CLICKHOUSE_IMAGE=docker.io/clickhouse/clickhouse-server:26.10.3.7@sha256:739e099abd1157390960a59e4532d21781d8fde57e6e4151cb920ea02c30b1ce
 ARG GRAFANA_IMAGE=dhi.io/grafana:13.3.0-debian13@sha256:0614feea5b3eeb8f21e07c00b11b7654a0247f8cf14471ea68da9cafebae0c63
 ARG GRAFANA_BUILD_IMAGE=dhi.io/grafana:13.3.0-debian13-dev@sha256:e986e8313fadb27d0e5e77da4cc221ad471b05c6a5bbbdbb997e6af13cbaa017
 ARG OPERATOR_IMAGE=dhi.io/clickhouse-operator:0.27.4-debian13@sha256:66ea2715cf30c01f56a1b3b5a69c30b0d7a6bd016234913142a252603fde6cbb
@@ -47,7 +47,7 @@ COPY --from=go-build /theia/sbom-monitor.spdx.json /sbom.spdx.json
 COPY LICENSE /LICENSE
 ENTRYPOINT ["/clickhouse-monitor"]
 
-# Upstream exception preserves the supported 26.8 LTS line and shell init hooks.
+# Approved upstream exception includes the Brotli fix and preserves shell init hooks.
 FROM ${CLICKHOUSE_IMAGE} AS clickhouse
 ARG VERSION
 LABEL org.opencontainers.image.version="${VERSION}" \
@@ -58,6 +58,7 @@ COPY LICENSE /LICENSE
 
 FROM ${GRAFANA_BUILD_IMAGE} AS grafana-build
 USER root
+ARG TARGETARCH
 COPY --from=sbom-tool /syft /usr/local/bin/syft
 ARG CLICKHOUSE_DATASOURCE_PLUGIN_VERSION=4.23.4
 RUN grafana cli --homepath /usr/share/grafana --pluginsDir /opt/grafana/plugins \
@@ -65,13 +66,30 @@ RUN grafana cli --homepath /usr/share/grafana --pluginsDir /opt/grafana/plugins 
 COPY plugins/grafana-custom-plugins/grafana-sankey-plugin/dist/ /opt/grafana/plugins/theia-grafana-sankey-plugin/
 COPY plugins/grafana-custom-plugins/grafana-chord-plugin/dist/ /opt/grafana/plugins/theia-grafana-chord-plugin/
 COPY plugins/grafana-custom-plugins/grafana-dependency-plugin/dist/ /opt/grafana/plugins/theia-grafana-dependency-plugin/
-RUN syft dir:/opt/grafana/plugins -o spdx-json=/sbom.spdx.json
+RUN for plugin in theia-grafana-sankey-plugin theia-grafana-chord-plugin theia-grafana-dependency-plugin; do \
+      test -s "/opt/grafana/plugins/${plugin}/plugin.json" && \
+      test -s "/opt/grafana/plugins/${plugin}/module.js" || exit 1; \
+    done && \
+    test -x "/opt/grafana/plugins/grafana-clickhouse-datasource/gpx_clickhouse_linux_${TARGETARCH}" && \
+    chmod -R a+rX,go-w /opt/grafana/plugins && \
+    mkdir -p /runtime-lib/grafana/plugins /runtime-log/grafana /runtime-root/tmp && \
+    chown -R 101:65532 /runtime-lib/grafana /runtime-log/grafana && \
+    chmod -R 0770 /runtime-lib/grafana /runtime-log/grafana && \
+    chmod 1777 /runtime-root/tmp && \
+    syft dir:/opt/grafana/plugins -o spdx-json=/sbom.spdx.json
 
 FROM ${GRAFANA_IMAGE} AS grafana
 ARG VERSION
 LABEL org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/Scoobed/theia"
 COPY --from=grafana-build --chown=65532:65532 /opt/grafana/plugins /opt/grafana/plugins
+# UID 101 can write as owner; the default UID/GID 65532 can write as group.
+# Existing mounted volumes still need their own matching ownership.
+COPY --from=grafana-build --chown=101:65532 /runtime-lib/ /var/lib/
+COPY --from=grafana-build --chown=101:65532 /runtime-log/ /var/log/
+# Backend plugins create temporary IPC files here even when the data PVC is writable.
+# Copy through the parent so the existing /tmp directory receives this metadata.
+COPY --from=grafana-build /runtime-root/ /
 COPY --from=grafana-build /sbom.spdx.json /sbom.spdx.json
 COPY LICENSE /LICENSE
 ENV GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=theia-grafana-sankey-plugin,theia-grafana-chord-plugin,theia-grafana-dependency-plugin
